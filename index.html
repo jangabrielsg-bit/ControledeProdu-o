@@ -222,6 +222,26 @@
             );
         };
 
+        // --- Dados Iniciais (Faltando anteriormente) ---
+        const initialRecipes = [
+            {
+                id: 1,
+                name: "Pão Francês Tradicional",
+                line: "Padaria",
+                sections: { "Massa": { processLossPct: 15, tolerancePct: 10 } },
+                ingredients: [
+                    { id: 1, name: "Farinha de Trigo", qty: 25000, unit: "g", lossPct: 0, section: "Massa" },
+                    { id: 2, name: "Água Gelada", qty: 15000, unit: "g", lossPct: 0, section: "Massa" },
+                    { id: 3, name: "Sal Refinado", qty: 500, unit: "g", lossPct: 0, section: "Massa" },
+                    { id: 4, name: "Fermento Biológico", qty: 800, unit: "g", lossPct: 0, section: "Massa" },
+                    { id: 5, name: "Melhorador", qty: 250, unit: "g", lossPct: 0, section: "Massa" }
+                ]
+            }
+        ];
+
+        const initialLines = ["Padaria", "Confeitaria", "Salgados", "Cozinha Industrial"];
+        const initialStages = ["Massa", "Recheio", "Cobertura", "Montagem", "Outros"];
+
         // --- Gráfico ---
         const ControlChart = ({ data, targetYield, stageName, tolerance }) => {
             const safeTolerance = tolerance !== undefined ? tolerance : 10;
@@ -1281,7 +1301,7 @@
 
             return (
                 <div className="flex flex-col min-h-screen relative">
-                    <GlobalStyles />
+                    {/* GlobalStyles removido pois os estilos estão no head */}
                     {notification && (<div className="fixed top-4 right-4 z-50 toast-enter no-print"><div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-600'}`}><Icon name={notification.type === 'error' ? 'X' : 'CheckCircle'} size={20} /><span className="font-medium">{notification.message}</span></div></div>)}
 
                     <header className="bg-gray-800 text-white p-4 shadow-lg no-print">
