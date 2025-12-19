@@ -1,34 +1,33 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Rendimentos</title>
+    <title>Controle de Rendimentos - Gestão de Produção</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel para JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel (para compilar o JSX no navegador) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- SheetJS (para ler Excel) -->
+    <!-- SheetJS (XLSX) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- Fonte Inter -->
+
+    <!-- Fontes -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
         
         /* Scrollbar Personalizada */
         .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f3f4f6; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
         
         /* Animações */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -39,8 +38,8 @@
             to { transform: translateX(0); opacity: 1; }
         }
         .toast-enter { animation: slideIn 0.3s ease-out forwards; }
-
-        /* Variáveis de Tema (Fallback) */
+        
+        /* Variáveis CSS (Fallback e dinâmicas) */
         :root {
             --primary: #3b82f6;
             --primary-dark: #1d4ed8;
@@ -52,12 +51,23 @@
         .border-primary { border-color: var(--primary) !important; }
         .hover-bg-primary:hover { background-color: var(--primary-dark) !important; }
         
+        /* Estilos de Impressão */
         @media print {
+            @page { size: A4; margin: 1cm; }
+            body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            body { background-color: white; }
             .shadow-sm, .shadow-lg { box-shadow: none !important; }
-            .border { border: 1px solid #ddd !important; }
+            .border { border: 1px solid #000 !important; }
+            .bg-gray-100, .bg-gray-50, .bg-blue-50 { background-color: white !important; }
+            
+            /* Tabela Excel Style */
+            .print-table { width: 100%; border-collapse: collapse; font-size: 10px; font-family: Arial, sans-serif; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 4px 8px; text-align: left; }
+            .print-table th { background-color: #eee !important; font-weight: bold; text-transform: uppercase; }
+            .print-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 10px; }
+            .print-section-header { background-color: #ddd !important; font-weight: bold; border-top: 2px solid #000; }
+            .break-inside-avoid { break-inside: avoid; }
         }
     </style>
 </head>
@@ -70,11 +80,13 @@
         // --- Helpers ---
         const toKg = (qty, unit) => {
             const val = parseFloat(qty) || 0;
-            if (unit === 'g' || unit === 'ml') return val / 1000;
+            const u = (unit || '').toLowerCase().trim();
+            if (u === 'g' || u === 'grama' || u === 'gramas') return val / 1000;
+            if (u === 'mg') return val / 1000000;
+            if (u === 'ml') return val / 1000;
             return val;
         };
 
-        // Função para extrair cor predominante da imagem
         const extractColor = (imgSrc) => {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -93,7 +105,7 @@
             });
         };
 
-        // --- Ícones SVG Inline ---
+        // --- Ícones SVG ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
                 ChefHat: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>,
@@ -110,15 +122,19 @@
                 AlertTriangle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
                 Edit: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
                 Calendar: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+                Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+                Image: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
                 Box: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22.08V12"/></svg>,
                 Eye: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
-                Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
-                Image: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                Sparkles: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
+                ArrowLeft: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+                Info: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+                Scale: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
             };
             return icons[name] || <span className="text-xs">?</span>;
         };
 
-        // --- Componente SearchableSelect ---
+        // --- SearchableSelect ---
         const SearchableSelect = ({ options, value, onChange, placeholder, labelKey = 'label', valueKey = 'value', disabled = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
@@ -126,7 +142,9 @@
 
             useEffect(() => {
                 const handleClickOutside = (event) => {
-                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setIsOpen(false);
+                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                    }
                 };
                 document.addEventListener("mousedown", handleClickOutside);
                 return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -162,46 +180,52 @@
             return (
                 <div className="relative w-full" ref={wrapperRef}>
                     <div className="relative">
-                        <input type="text" className={`w-full p-2 border ${isOpen ? 'border-primary ring-1 ring-blue-500' : 'border-slate-300'} rounded-lg outline-none text-sm bg-white disabled:bg-slate-100 disabled:text-slate-400`} placeholder={placeholder} value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setIsOpen(true); if(e.target.value === '') onChange(''); }} onClick={() => !disabled && setIsOpen(true)} disabled={disabled} />
-                        <div className="absolute right-2 top-2.5 text-slate-400 pointer-events-none"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+                        <input
+                            type="text"
+                            className={`w-full p-2 border ${isOpen ? 'border-primary ring-1 ring-blue-500' : 'border-gray-300'} rounded-lg outline-none text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400`}
+                            placeholder={placeholder}
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setIsOpen(true);
+                                if(e.target.value === '') onChange('');
+                            }}
+                            onClick={() => !disabled && setIsOpen(true)}
+                            disabled={disabled}
+                        />
+                        <div className="absolute right-2 top-2.5 text-gray-400 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
                     </div>
                     {isOpen && !disabled && (
-                        <ul className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto custom-scroll">
-                            {filteredOptions.length > 0 ? (filteredOptions.map((opt, idx) => {
-                                const val = typeof opt === 'object' ? opt[valueKey] : opt;
-                                const label = typeof opt === 'object' ? opt[labelKey] : opt;
-                                return (<li key={idx} onClick={() => handleSelect(opt)} className={`p-2 text-sm cursor-pointer hover:bg-slate-50 ${val === value ? 'bg-slate-100 text-primary font-medium' : 'text-slate-700'}`}>{String(label)}</li>);
-                            })) : (<li className="p-2 text-sm text-slate-400 italic">Nenhuma opção encontrada</li>)}
+                        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto custom-scroll" style={{ zIndex: 9999 }}>
+                            {filteredOptions.length > 0 ? (
+                                filteredOptions.map((opt, idx) => {
+                                    const val = typeof opt === 'object' ? opt[valueKey] : opt;
+                                    const label = typeof opt === 'object' ? opt[labelKey] : opt;
+                                    return (
+                                        <li 
+                                            key={idx} 
+                                            onClick={() => handleSelect(opt)}
+                                            className={`p-2 text-sm cursor-pointer hover:bg-gray-50 ${val === value ? 'bg-gray-100 text-primary font-medium' : 'text-gray-700'}`}
+                                        >
+                                            {String(label)}
+                                        </li>
+                                    );
+                                })
+                            ) : (
+                                <li className="p-2 text-sm text-gray-400 italic">Nenhuma opção encontrada</li>
+                            )}
                         </ul>
                     )}
                 </div>
             );
         };
 
-        // --- Dados Iniciais ---
-        const initialRecipes = [
-            {
-                id: 1,
-                name: "Pão Francês Tradicional",
-                line: "Padaria",
-                sections: { "Massa": { processLossPct: 15, tolerancePct: 10 } },
-                ingredients: [
-                    { id: 1, name: "Farinha de Trigo", qty: 25000, unit: "g", lossPct: 0, section: "Massa" },
-                    { id: 2, name: "Água Gelada", qty: 15000, unit: "g", lossPct: 0, section: "Massa" },
-                    { id: 3, name: "Sal Refinado", qty: 500, unit: "g", lossPct: 0, section: "Massa" },
-                    { id: 4, name: "Fermento Biológico", qty: 800, unit: "g", lossPct: 0, section: "Massa" },
-                    { id: 5, name: "Melhorador", qty: 250, unit: "g", lossPct: 0, section: "Massa" }
-                ]
-            }
-        ];
-
-        const initialLines = ["Padaria", "Confeitaria", "Salgados", "Cozinha Industrial"];
-        const initialStages = ["Massa", "Recheio", "Cobertura", "Montagem", "Outros"];
-
-        // --- Componente de Gráfico ---
+        // --- Gráfico ---
         const ControlChart = ({ data, targetYield, stageName, tolerance }) => {
             const safeTolerance = tolerance !== undefined ? tolerance : 10;
-            if (!data || data.length < 2) return <div className="h-48 flex items-center justify-center text-slate-400 text-sm bg-slate-50 rounded-lg border border-dashed">Dados insuficientes para gráfico (mínimo 2 registros)</div>;
+            if (!data || data.length < 2) return <div className="h-48 flex items-center justify-center text-gray-400 text-sm bg-gray-50 rounded-lg border border-dashed">Dados insuficientes para gráfico (mínimo 2 registros)</div>;
             const values = data.map(d => d.yieldPct);
             const dates = data.map(d => new Date(d.date));
             const mean = targetYield || 0;
@@ -217,55 +241,55 @@
 
             return (
                 <div className="w-full overflow-x-auto">
-                    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="bg-white rounded-lg shadow-sm border border-slate-200 min-w-[600px]">
-                        <rect x={padding} y={padding} width={width - padding * 2} height={height - padding * 2} fill="#f8fafc" />
+                    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="bg-white rounded-lg shadow-sm border border-gray-200 min-w-[600px]">
+                        <rect x={padding} y={padding} width={width - padding * 2} height={height - padding * 2} fill="#f9fafb" />
                         <line x1={padding} y1={getY(mean)} x2={width - padding} y2={getY(mean)} stroke="var(--primary)" strokeWidth="2" strokeDasharray="4" />
                         <text x={width - padding + 5} y={getY(mean) + 3} className="text-[10px] fill-emerald-600 font-bold">Meta: {mean.toFixed(1)}%</text>
                         <line x1={padding} y1={getY(upperLimit)} x2={width - padding} y2={getY(upperLimit)} stroke="#ef4444" strokeWidth="1" strokeDasharray="2" />
                         <text x={width - padding + 5} y={getY(upperLimit) + 3} className="text-[10px] fill-red-500">LCS</text>
                         <line x1={padding} y1={getY(lowerLimit)} x2={width - padding} y2={getY(lowerLimit)} stroke="#ef4444" strokeWidth="1" strokeDasharray="2" />
                         <text x={width - padding + 5} y={getY(lowerLimit) + 3} className="text-[10px] fill-red-500">LCI</text>
-                        <polyline points={points} fill="none" stroke="#64748b" strokeWidth="2" />
+                        <polyline points={points} fill="none" stroke="#6b7280" strokeWidth="2" />
                         {values.map((val, idx) => (
                             <g key={idx}>
-                                <circle cx={getX(idx)} cy={getY(val)} r="4" fill={val > upperLimit || val < lowerLimit ? "#ef4444" : "#64748b"} stroke="white" strokeWidth="2"><title>{dates[idx].toLocaleDateString()}: {val.toFixed(2)}%</title></circle>
-                                { (data.length <= 10 || idx % Math.ceil(data.length/10) === 0) && <text x={getX(idx)} y={height - 15} textAnchor="middle" className="text-[9px] fill-slate-500 font-medium" fontSize="9">{dates[idx].toLocaleDateString(undefined, {day:'2-digit', month:'2-digit'})}</text> }
+                                <circle cx={getX(idx)} cy={getY(val)} r="4" fill={val > upperLimit || val < lowerLimit ? "#ef4444" : "#6b7280"} stroke="white" strokeWidth="2"><title>{dates[idx].toLocaleDateString()}: {val.toFixed(2)}%</title></circle>
+                                { (data.length <= 10 || idx % Math.ceil(data.length/10) === 0) && <text x={getX(idx)} y={height - 15} textAnchor="middle" className="text-[9px] fill-gray-500 font-medium" fontSize="9">{dates[idx].toLocaleDateString(undefined, {day:'2-digit', month:'2-digit'})}</text> }
                             </g>
                         ))}
                     </svg>
-                    <div className="text-center text-xs text-slate-500 mt-2">Rendimento Real vs Meta ({mean.toFixed(1)}%)</div>
+                    <div className="text-center text-xs text-gray-500 mt-2">Rendimento Real vs Meta ({mean.toFixed(1)}%)</div>
                 </div>
             );
         };
 
-        // --- Sub-Componentes ---
+        // --- SUB-COMPONENTES DO APP ---
 
         const Dashboard = ({ setView }) => (
             <div className="space-y-6 animate-fade-in">
-                <h2 className="text-2xl font-bold text-slate-800">Painel de Controle</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Painel de Controle</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div onClick={() => setView('production')} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-shadow group">
+                    <div onClick={() => setView('production')} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow group">
                         <div className="flex justify-between items-start">
-                            <div><p className="text-slate-500 text-sm font-medium">Operacional</p><h3 className="text-lg font-bold text-slate-800 mt-1">Ordens de Produção</h3></div>
+                            <div><p className="text-gray-500 text-sm font-medium">Operacional</p><h3 className="text-lg font-bold text-gray-800 mt-1">Ordens de Produção</h3></div>
                             <div className="p-3 bg-blue-50 text-primary rounded-lg transition-colors"><Icon name="ClipboardList" /></div>
                         </div>
                     </div>
-                    <div onClick={() => setView('monitoring')} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-shadow group">
+                    <div onClick={() => setView('monitoring')} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow group">
                         <div className="flex justify-between items-start">
-                            <div><p className="text-slate-500 text-sm font-medium">Qualidade</p><h3 className="text-lg font-bold text-slate-800 mt-1">Acompanhamento</h3></div>
+                            <div><p className="text-gray-500 text-sm font-medium">Qualidade</p><h3 className="text-lg font-bold text-gray-800 mt-1">Acompanhamento</h3></div>
                             <div className="p-3 bg-purple-50 text-purple-600 rounded-lg transition-colors"><Icon name="Activity" /></div>
                         </div>
                     </div>
-                    <div onClick={() => setView('recipes')} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-shadow group">
+                    <div onClick={() => setView('recipes')} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow group">
                         <div className="flex justify-between items-start">
-                            <div><p className="text-slate-500 text-sm font-medium">Técnica</p><h3 className="text-lg font-bold text-slate-800 mt-1">Minhas Receitas</h3></div>
+                            <div><p className="text-gray-500 text-sm font-medium">Técnica</p><h3 className="text-lg font-bold text-gray-800 mt-1">Minhas Receitas</h3></div>
                             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg transition-colors"><Icon name="ChefHat" /></div>
                         </div>
                     </div>
-                    <div onClick={() => setView('settings')} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-shadow group">
+                    <div onClick={() => setView('settings')} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow group">
                         <div className="flex justify-between items-start">
-                            <div><p className="text-slate-500 text-sm font-medium">Sistema</p><h3 className="text-lg font-bold text-slate-800 mt-1">Configurações</h3></div>
-                            <div className="p-3 bg-slate-50 text-slate-600 rounded-lg transition-colors"><Icon name="Settings" /></div>
+                            <div><p className="text-gray-500 text-sm font-medium">Sistema</p><h3 className="text-lg font-bold text-gray-800 mt-1">Configurações</h3></div>
+                            <div className="p-3 bg-gray-50 text-gray-600 rounded-lg transition-colors"><Icon name="Settings" /></div>
                         </div>
                     </div>
                 </div>
@@ -275,6 +299,7 @@
         const SettingsView = ({ lines, setLines, stages, setStages, settings, setSettings, onError, showNotification }) => {
             const [newLine, setNewLine] = useState('');
             const [newStage, setNewStage] = useState('');
+            const fileInputRef = useRef(null);
 
             const handleLogoUpload = (e) => {
                 const file = e.target.files[0];
@@ -297,90 +322,204 @@
 
             return (
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Personalização da Marca</h3>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Personalização da Marca</h3>
                         <div className="flex items-center gap-6">
-                            <div className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden bg-slate-50 relative group cursor-pointer">
-                                {settings.logo ? <img src={settings.logo} className="w-full h-full object-contain" /> : <Icon name="Image" className="text-slate-400" size={32} />}
-                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleLogoUpload} />
+                            <div 
+                                className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 relative group cursor-pointer hover:border-primary transition-colors"
+                                onClick={() => fileInputRef.current.click()}
+                            >
+                                {settings.logo ? <img src={settings.logo} className="w-full h-full object-contain" /> : <Icon name="Image" className="text-gray-400" size={32} />}
+                                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-medium">Alterar</div>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-slate-700">Logo da Empresa</p>
-                                <p className="text-xs text-slate-500 mt-1">O sistema irá extrair a cor da sua logo<br/>para personalizar o tema.</p>
+                                <p className="text-sm font-medium text-gray-700">Logo da Empresa</p>
+                                <p className="text-xs text-gray-500 mt-1">O sistema irá extrair a cor da sua logo<br/>para personalizar o tema.</p>
                                 <div className="flex items-center gap-2 mt-3">
-                                    <span className="text-xs text-slate-500">Cor do Tema:</span>
-                                    <div className="w-6 h-6 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: settings.themeColor }}></div>
+                                    <span className="text-xs text-gray-500">Cor do Tema:</span>
+                                    <div className="w-6 h-6 rounded-full border border-gray-200 shadow-sm" style={{ backgroundColor: settings.themeColor }}></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">Linhas de Produção</h3>
-                            <div className="flex gap-2 mb-4"><input value={newLine} onChange={e => setNewLine(e.target.value)} placeholder="Nova linha..." className="flex-1 p-2 border border-slate-300 rounded-lg text-sm" /><button onClick={addLine} className="bg-primary text-white px-3 rounded-lg"><Icon name="Plus" size={18}/></button></div>
-                            <ul className="space-y-2">{lines.map(l => (<li key={l} className="flex justify-between items-center bg-slate-50 p-2 rounded text-sm">{l}<button onClick={() => removeLine(l)} className="text-red-500"><Icon name="Trash2" size={16}/></button></li>))}</ul>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">Linhas de Produção</h3>
+                            <div className="flex gap-2 mb-4"><input value={newLine} onChange={e => setNewLine(e.target.value)} placeholder="Nova linha..." className="flex-1 p-2 border border-gray-300 rounded-lg text-sm" /><button onClick={addLine} className="bg-primary text-white px-3 rounded-lg"><Icon name="Plus" size={18}/></button></div>
+                            <ul className="space-y-2">{lines.map(l => (<li key={l} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm">{l}<button onClick={() => removeLine(l)} className="text-red-500"><Icon name="Trash2" size={16}/></button></li>))}</ul>
                         </div>
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">Etapas da Receita</h3>
-                            <div className="flex gap-2 mb-4"><input value={newStage} onChange={e => setNewStage(e.target.value)} placeholder="Nova etapa..." className="flex-1 p-2 border border-slate-300 rounded-lg text-sm" /><button onClick={addStage} className="bg-primary text-white px-3 rounded-lg"><Icon name="Plus" size={18}/></button></div>
-                            <ul className="space-y-2">{stages.map(s => (<li key={s} className="flex justify-between items-center bg-slate-50 p-2 rounded text-sm">{s}<button onClick={() => removeStage(s)} className="text-red-500"><Icon name="Trash2" size={16}/></button></li>))}</ul>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">Etapas da Receita</h3>
+                            <div className="flex gap-2 mb-4"><input value={newStage} onChange={e => setNewStage(e.target.value)} placeholder="Nova etapa..." className="flex-1 p-2 border border-gray-300 rounded-lg text-sm" /><button onClick={addStage} className="bg-primary text-white px-3 rounded-lg"><Icon name="Plus" size={18}/></button></div>
+                            <ul className="space-y-2">{stages.map(s => (<li key={s} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm">{s}<button onClick={() => removeStage(s)} className="text-red-500"><Icon name="Trash2" size={16}/></button></li>))}</ul>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const RecipeList = ({ recipes, lines, onCreate, onEdit, onDelete, onImport }) => {
-            const [filterLine, setFilterLine] = useState('');
-            const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-            const filtered = filterLine ? recipes.filter(r => r.line === filterLine) : recipes;
-            const fileInputRef = useRef(null);
-            const handleFileChange = (e) => { if (e.target.files && e.target.files[0]) { onImport(e.target.files[0]); e.target.value = null; } };
+        const RecipeDetails = ({ recipe, onEdit, onBack, onDelete }) => {
+            const sections = useMemo(() => {
+                const map = {};
+                recipe.ingredients.forEach(ing => {
+                    const sec = ing.section || 'Geral';
+                    if (!map[sec]) map[sec] = [];
+                    map[sec].push(ing);
+                });
+                return map;
+            }, [recipe]);
 
             return (
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex-1">
-                            <h2 className="text-xl font-bold text-slate-800">Minhas Receitas</h2>
-                            <p className="text-xs text-slate-400 mt-1">Gerencie seu catálogo de produtos</p>
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-fade-in">
+                    <div className="bg-gray-50 p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <button onClick={onBack} className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1 text-sm font-medium">
+                                    <Icon name="ArrowLeft" size={16} /> Voltar
+                                </button>
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800">{recipe.name}</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="px-2 py-0.5 bg-blue-100 text-primary text-xs font-bold rounded-full uppercase tracking-wide">{recipe.line}</span>
+                                <span className="text-gray-400 text-sm">• {recipe.ingredients.length} Ingredientes</span>
+                            </div>
                         </div>
-                        <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
-                            <div className="w-full md:w-48"><SearchableSelect options={[{label: 'Todas as Linhas', value: ''}, ...lines.map(l => ({label: l, value: l}))]} value={filterLine} onChange={setFilterLine} placeholder="Filtrar Linha" /></div>
-                            <button onClick={() => fileInputRef.current.click()} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><Icon name="Upload" size={16} /> Importar Excel</button>
-                            <input type="file" accept=".xlsx, .xls" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-                            <button onClick={onCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover-bg-primary flex items-center gap-2"><Icon name="Plus" size={16} /> Nova Receita</button>
+                        <div className="flex gap-2">
+                            <button onClick={() => onDelete(recipe.id)} className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 flex items-center gap-2">
+                                <Icon name="Trash2" size={16} /> Excluir
+                            </button>
+                            <button onClick={() => onEdit(recipe)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover-bg-primary flex items-center gap-2 shadow-sm">
+                                <Icon name="Edit" size={16} /> Editar Receita
+                            </button>
                         </div>
                     </div>
-                    <div className="divide-y divide-slate-100">
-                        {filtered.length === 0 ? <div className="p-8 text-center text-slate-400">Nenhuma receita encontrada.</div> : filtered.map(recipe => (
-                            <div key={recipe.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                                <div>
-                                    <h3 className="font-bold text-slate-800">{recipe.name}</h3>
-                                    <div className="flex gap-2 mt-1">
-                                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">{recipe.line}</span>
-                                        <span className="text-xs text-slate-400">{recipe.ingredients.length} Ingredientes</span>
-                                        {recipe.sections && Object.keys(recipe.sections).map(sec => (<span key={sec} className="text-[10px] bg-blue-50 text-primary px-1.5 py-0.5 rounded border border-blue-100">{sec}</span>))}
+
+                    <div className="p-6 space-y-8">
+                        {Object.keys(sections).map(sectionName => {
+                            const sectionIngs = sections[sectionName];
+                            const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0, tolerancePct: 10 };
+                            const totalWeight = sectionIngs.reduce((acc, i) => acc + toKg(i.qty, i.unit), 0);
+                            
+                            return (
+                                <div key={sectionName} className="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                                        <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                            <div className="w-2 h-6 bg-primary rounded-full"></div>
+                                            {sectionName}
+                                        </h3>
+                                        <div className="flex gap-4 text-xs">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-gray-500 uppercase font-bold text-[10px]">Perda Teórica</span>
+                                                <span className="font-bold text-gray-700">{sectionConfig.processLossPct}%</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-gray-500 uppercase font-bold text-[10px]">Tolerância</span>
+                                                <span className="font-bold text-gray-700">± {sectionConfig.tolerancePct}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="divide-y divide-gray-100">
+                                        {sectionIngs.map((ing, idx) => (
+                                            <div key={idx} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors">
+                                                <div className="font-medium text-gray-700">{ing.name}</div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right">
+                                                        <span className="font-bold text-gray-800">{ing.qty}</span> <span className="text-xs text-gray-500">{ing.unit}</span>
+                                                    </div>
+                                                    {ing.lossPct > 0 && (
+                                                        <div className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 font-medium">
+                                                            -{ing.lossPct}% Quebra
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="bg-blue-50/50 px-4 py-3 border-t border-blue-100 flex justify-between items-center text-sm">
+                                        <span className="font-bold text-blue-800">Peso Total da Etapa</span>
+                                        <span className="font-bold text-blue-800">{totalWeight.toFixed(4)} kg</span>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 items-center">
-                                    {deleteConfirmId === recipe.id ? (
-                                        <div className="flex items-center gap-2 bg-red-50 p-1 rounded-lg border border-red-100">
-                                            <span className="text-xs text-red-600 font-medium pl-2">Confirmar?</span>
-                                            <button onClick={() => onDelete(recipe.id)} className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600">Sim</button>
-                                            <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700">Não</button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => onEdit(recipe)} className="p-2 text-primary hover:text-blue-800 rounded-lg">Editar</button>
-                                            <button onClick={() => setDeleteConfirmId(recipe.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Icon name="Trash2" size={18} /></button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+
+                        <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-600">
+                            <Icon name="Info" className="text-primary mt-0.5" />
+                            <p>Esta é a ficha técnica oficial. Utilize a aba "Produção" para gerar ordens de serviço escalonadas ou "Monitoramento" para lançar dados reais de chão de fábrica.</p>
+                        </div>
                     </div>
+                </div>
+            );
+        };
+
+        const RecipeList = ({ recipes, lines, onCreate, onView, onImport }) => {
+            const [filterLine, setFilterLine] = useState('');
+            const filtered = filterLine ? recipes.filter(r => r.line === filterLine) : recipes;
+            const fileInputRef = useRef(null);
+            const handleFileChange = (e) => { 
+                if (e.target.files && e.target.files[0]) { 
+                    onImport(e.target.files[0]); 
+                    e.target.value = null; 
+                } 
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <div className="flex-1">
+                            <h2 className="text-xl font-bold text-gray-800">Catálogo de Receitas</h2>
+                            <p className="text-xs text-gray-400 mt-1">{filtered.length} receitas cadastradas</p>
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
+                            <div className="w-full md:w-48"><SearchableSelect options={[{label: 'Todas as Linhas', value: ''}, ...lines.map(l => ({label: l, value: l}))]} value={filterLine} onChange={setFilterLine} placeholder="Filtrar por Linha" /></div>
+                            <button onClick={() => fileInputRef.current.click()} className="bg-white border border-emerald-600 text-emerald-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-50 flex items-center gap-2"><Icon name="Upload" size={16} /> Importar</button>
+                            <input type="file" accept=".xlsx, .xls, .csv" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                            <button onClick={onCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover-bg-primary flex items-center gap-2 shadow-sm"><Icon name="Plus" size={16} /> Nova Receita</button>
+                        </div>
+                    </div>
+
+                    {filtered.length === 0 ? (
+                        <div className="p-12 text-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
+                            <Icon name="ChefHat" size={48} className="mx-auto mb-3 text-gray-200" />
+                            <p>Nenhuma receita encontrada.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filtered.map(recipe => (
+                                <div 
+                                    key={recipe.id} 
+                                    onClick={() => onView(recipe)}
+                                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-primary transition-all group relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Icon name="Eye" className="text-primary" />
+                                    </div>
+                                    <div className="flex items-start gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-blue-50 text-primary flex items-center justify-center font-bold text-lg border border-blue-100">
+                                            {recipe.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 block">{recipe.line}</span>
+                                            <h3 className="font-bold text-gray-800 text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2">{recipe.name}</h3>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 text-xs text-gray-500 mt-4 pt-4 border-t border-gray-100">
+                                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
+                                            <Icon name="Box" size={14} /> 
+                                            <span>{recipe.ingredients.length} Itens</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
+                                            <Icon name="Activity" size={14} />
+                                            <span>{recipe.sections ? Object.keys(recipe.sections).length : 0} Etapas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -398,7 +537,6 @@
                 const sectionIngs = form.ingredients.filter(i => (i.section || stages[0]) === sectionName);
                 const totalInputWeightKg = sectionIngs.reduce((acc, curr) => acc + toKg(curr.qty, curr.unit), 0);
                 const lossPct = form.sections?.[sectionName]?.processLossPct || 0;
-                // Rendimento Teórico = Soma Insumos - Perda
                 const theoreticalYieldKg = totalInputWeightKg * (1 - (lossPct/100));
                 return { totalInputWeightKg, theoreticalYieldKg };
             };
@@ -427,35 +565,35 @@
             };
 
             return (
-                <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 max-w-4xl mx-auto">
-                    <h2 className="text-xl font-bold text-slate-800 mb-6">{form.id ? 'Editar Receita' : 'Nova Receita'}</h2>
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 max-w-4xl mx-auto">
+                    <h2 className="text-xl font-bold text-gray-800 mb-6">{form.id ? 'Editar Receita' : 'Nova Receita'}</h2>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className="block text-sm font-medium text-slate-700 mb-1">Nome da Receita</label><input required type="text" value={form.name} onChange={e => updateField('name', e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Bolo de Chocolate" /></div>
-                            <div><label className="block text-sm font-medium text-slate-700 mb-1">Linha de Produção</label><div className="w-full"><SearchableSelect options={lines} value={form.line} onChange={(val) => updateField('line', val)} placeholder="Selecione a Linha" /></div></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome da Receita</label><input required type="text" value={form.name} onChange={e => updateField('name', e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Bolo de Chocolate" /></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Linha de Produção</label><div className="w-full"><SearchableSelect options={lines} value={form.line} onChange={(val) => updateField('line', val)} placeholder="Selecione a Linha" /></div></div>
                         </div>
                         <div className="space-y-6">
                             {activeSections.map((secName) => {
                                 const { totalInputWeightKg, theoreticalYieldKg } = calculateSectionData(secName);
                                 return (
-                                    <div key={secName} className="border border-slate-200 rounded-lg overflow-hidden">
-                                        <div className="bg-slate-100 p-3 flex justify-between items-center border-b border-slate-200">
+                                    <div key={secName} className="border border-gray-200 rounded-lg overflow-hidden">
+                                        <div className="bg-gray-100 p-3 flex justify-between items-center border-b border-gray-200">
                                             <div className="flex items-center gap-3">
-                                                <h3 className="font-bold text-slate-700">{secName}</h3>
-                                                <div className="flex items-center bg-white px-2 py-1 rounded border border-slate-300"><span className="text-[10px] font-bold text-slate-500 mr-2">Tolerância (+/- %)</span><input type="number" className="w-10 text-xs font-bold text-center outline-none" value={form.sections?.[secName]?.tolerancePct || 10} onChange={(e) => updateSectionTolerance(secName, parseFloat(e.target.value))} /></div>
+                                                <h3 className="font-bold text-gray-700">{secName}</h3>
+                                                <div className="flex items-center bg-white px-2 py-1 rounded border border-gray-300"><span className="text-[10px] font-bold text-gray-500 mr-2">Tolerância (+/- %)</span><input type="number" className="w-10 text-xs font-bold text-center outline-none" value={form.sections?.[secName]?.tolerancePct || 10} onChange={(e) => updateSectionTolerance(secName, parseFloat(e.target.value))} /></div>
                                             </div>
                                         </div>
                                         <div className="p-3 bg-white space-y-3">
-                                            <div className="hidden md:flex gap-2 px-1 text-[10px] font-bold text-slate-500 uppercase"><div className="flex-grow">Ingrediente</div><div className="w-24">Qtd (1 un)</div><div className="w-16">Und</div><div className="w-20 text-red-500">Perdas*</div><div className="w-8"></div></div>
+                                            <div className="hidden md:flex gap-2 px-1 text-[10px] font-bold text-gray-500 uppercase"><div className="flex-grow">Ingrediente</div><div className="w-24">Qtd (1 un)</div><div className="w-16">Und</div><div className="w-20 text-red-500">Perdas*</div><div className="w-8"></div></div>
                                             {form.ingredients.map((ing, idx) => {
                                                 if ((ing.section || stages[0]) !== secName) return null;
                                                 return (
                                                     <div key={idx} className="flex flex-wrap md:flex-nowrap gap-2 items-center">
-                                                        <div className="flex-grow w-full md:w-auto"><input required placeholder="Nome do Ingrediente" value={ing.name} onChange={e => updateIngredient(idx, 'name', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md text-sm" /></div>
-                                                        <div className="w-1/2 md:w-24"><input required type="number" step="0.0001" placeholder="Qtd" value={ing.qty} onChange={e => updateIngredient(idx, 'qty', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md text-sm" /></div>
-                                                        <div className="w-1/2 md:w-16"><select value={ing.unit} onChange={e => updateIngredient(idx, 'unit', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md text-sm"><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="un">un</option></select></div>
-                                                        <div className="w-full md:w-20 relative"><input type="number" step="0.0001" placeholder="%" value={ing.lossPct} onChange={e => updateIngredient(idx, 'lossPct', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-red-500" /></div>
-                                                        <button type="button" onClick={() => removeIngredient(idx)} className="text-slate-400 hover:text-red-500 p-2"><Icon name="Trash2" size={16} /></button>
+                                                        <div className="flex-grow w-full md:w-auto"><input required placeholder="Nome do Ingrediente" value={ing.name} onChange={e => updateIngredient(idx, 'name', e.target.value)} className="w-full p-2 bg-gray-50 border border-gray-200 rounded-md text-sm" /></div>
+                                                        <div className="w-1/2 md:w-24"><input required type="number" step="0.0001" placeholder="Qtd" value={ing.qty} onChange={e => updateIngredient(idx, 'qty', e.target.value)} className="w-full p-2 bg-gray-50 border border-gray-200 rounded-md text-sm" /></div>
+                                                        <div className="w-1/2 md:w-16"><select value={ing.unit} onChange={e => updateIngredient(idx, 'unit', e.target.value)} className="w-full p-2 bg-gray-50 border border-gray-200 rounded-md text-sm"><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="un">un</option></select></div>
+                                                        <div className="w-full md:w-20 relative"><input type="number" step="0.0001" placeholder="%" value={ing.lossPct} onChange={e => updateIngredient(idx, 'lossPct', e.target.value)} className="w-full p-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-red-500" /></div>
+                                                        <button type="button" onClick={() => removeIngredient(idx)} className="text-gray-400 hover:text-red-500 p-2"><Icon name="Trash2" size={16} /></button>
                                                     </div>
                                                 );
                                             })}
@@ -477,13 +615,13 @@
                                 );
                             })}
                             {activeSections.length < stages.length && (
-                                <div className="bg-slate-50 p-4 rounded-lg border border-dashed border-slate-300 text-center">
-                                    <p className="text-sm text-slate-500 mb-2">Adicionar nova etapa à receita:</p>
-                                    <div className="flex justify-center gap-2 flex-wrap">{stages.filter(s => !activeSections.includes(s)).map(s => (<button key={s} type="button" onClick={() => addIngredient(s)} className="text-xs bg-white border border-slate-300 px-3 py-1 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors">+ {s}</button>))}</div>
+                                <div className="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300 text-center">
+                                    <p className="text-sm text-gray-500 mb-2">Adicionar nova etapa à receita:</p>
+                                    <div className="flex justify-center gap-2 flex-wrap">{stages.filter(s => !activeSections.includes(s)).map(s => (<button key={s} type="button" onClick={() => addIngredient(s)} className="text-xs bg-white border border-gray-300 px-3 py-1 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors">+ {s}</button>))}</div>
                                 </div>
                             )}
                         </div>
-                        <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={onCancel} className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">Cancelar</button><button type="submit" className="px-6 py-2 bg-primary text-white font-medium hover-bg-primary rounded-lg shadow-sm">Salvar Receita</button></div>
+                        <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={onCancel} className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Cancelar</button><button type="submit" className="px-6 py-2 bg-primary text-white font-medium hover-bg-primary rounded-lg shadow-sm">Salvar Receita</button></div>
                     </form>
                 </div>
             );
@@ -492,8 +630,9 @@
         const ProductionOrders = ({ recipes, lines, onError }) => {
             const [selectedLine, setSelectedLine] = useState('');
             const [selectedRecipeId, setSelectedRecipeId] = useState('');
-            const [mode, setMode] = useState('batch'); 
+            const [mode, setMode] = useState('batch'); // 'batch', 'target', 'proportional'
             const [inputValue, setInputValue] = useState(1);
+            const [basisItem, setBasisItem] = useState(''); // "SECTION:Massa" or "ING:Farinha"
 
             const filteredRecipes = useMemo(() => {
                 if (!selectedLine) return recipes;
@@ -502,8 +641,18 @@
 
             const selectedRecipe = useMemo(() => recipes.find(r => r.id == selectedRecipeId), [recipes, selectedRecipeId]);
 
+            const basisOptions = useMemo(() => {
+                if (!selectedRecipe) return [];
+                const opts = [];
+                const sections = Array.from(new Set(selectedRecipe.ingredients.map(i => i.section || 'Geral')));
+                sections.forEach(s => opts.push({ label: `[ETAPA] ${s}`, value: `SECTION:${s}` }));
+                selectedRecipe.ingredients.forEach(i => opts.push({ label: `[ING] ${i.name}`, value: `ING:${i.name}:${i.section}` }));
+                return opts;
+            }, [selectedRecipe]);
+
             const calculation = useMemo(() => {
                 if (!selectedRecipe) return null;
+
                 const ingredientsBySection = {};
                 selectedRecipe.ingredients.forEach(ing => {
                     const sec = ing.section || "Outros";
@@ -519,14 +668,49 @@
                     const sectionLossPct = selectedRecipe.sections?.[secName]?.processLossPct || 0;
                     const sectionBaseWeightKg = sectionIngs.reduce((acc, curr) => acc + toKg(curr.qty, curr.unit), 0);
                     const sectionYieldKg = sectionBaseWeightKg * (1 - (sectionLossPct / 100));
-                    sectionsData[secName] = { baseWeightKg: sectionBaseWeightKg, yieldKg: sectionYieldKg, lossPct: sectionLossPct, ingredients: sectionIngs };
+
+                    sectionsData[secName] = {
+                        baseWeightKg: sectionBaseWeightKg,
+                        yieldKg: sectionYieldKg,
+                        lossPct: sectionLossPct,
+                        ingredients: sectionIngs
+                    };
                     totalNetYieldKg += sectionYieldKg;
                 });
                 
                 let factor = 1;
                 let targetBatches = 0;
-                if (mode === 'batch') { factor = parseFloat(inputValue) || 0; targetBatches = factor; }
-                else { const targetKg = (parseFloat(inputValue) || 0); if (totalNetYieldKg > 0) { factor = targetKg / totalNetYieldKg; targetBatches = factor; } else return null; }
+                let referenceLabel = "Padrão";
+
+                if (mode === 'batch') {
+                    factor = parseFloat(inputValue) || 0;
+                    targetBatches = factor;
+                    referenceLabel = `${factor} Bateladas`;
+                } else if (mode === 'target') {
+                    const targetKg = (parseFloat(inputValue) || 0);
+                    if (totalNetYieldKg > 0) factor = targetKg / totalNetYieldKg;
+                    targetBatches = factor;
+                    referenceLabel = `Meta: ${targetKg}kg Produto Final`;
+                } else if (mode === 'proportional' && basisItem) {
+                    const [type, name, sec] = basisItem.split(':');
+                    const targetQty = parseFloat(inputValue) || 0;
+                    let baseQty = 0;
+
+                    if (type === 'SECTION') {
+                        if (sectionsData[name]) {
+                            baseQty = sectionsData[name].baseWeightKg;
+                        }
+                    } else if (type === 'ING') {
+                        const ing = selectedRecipe.ingredients.find(i => i.name === name && (i.section || 'Geral') === (sec || 'Geral'));
+                        if (ing) baseQty = toKg(ing.qty, ing.unit);
+                    }
+
+                    if (baseQty > 0) {
+                        factor = targetQty / baseQty;
+                        targetBatches = factor;
+                        referenceLabel = `Base: ${targetQty}kg de ${name}`;
+                    }
+                }
 
                 const finalSections = [];
                 let grandTotalGrossKg = 0;
@@ -539,50 +723,206 @@
                         const totalReqKg = weightInKg * factor;
                         const cleanLossPct = parseFloat(ing.lossPct) || 0;
                         const grossReqKg = cleanLossPct >= 100 ? 0 : totalReqKg / (1 - (cleanLossPct/100));
-                        return { ...ing, calcNet: totalReqOriginalUnit, calcGrossKg: grossReqKg };
+                        
+                        return {
+                            ...ing,
+                            calcNet: totalReqOriginalUnit,
+                            calcGrossKg: grossReqKg
+                        };
                     });
+
                     const sectionTotalGrossKg = scaledIngs.reduce((sum, i) => sum + i.calcGrossKg, 0);
                     const sectionFinalWeightKg = data.yieldKg * factor;
                     grandTotalGrossKg += sectionTotalGrossKg;
-                    finalSections.push({ name: secName, processLossPct: data.lossPct, ingredients: scaledIngs, finalWeightKg: sectionFinalWeightKg });
+
+                    finalSections.push({
+                        name: secName,
+                        processLossPct: data.lossPct,
+                        ingredients: scaledIngs,
+                        finalWeightKg: sectionFinalWeightKg
+                    });
                 });
+
                 const finalProductWeightKg = finalSections.reduce((acc, sec) => acc + sec.finalWeightKg, 0);
-                return { factor, targetBatches, sections: finalSections, totalGrossKg: grandTotalGrossKg, finalProductWeightKg };
-            }, [selectedRecipe, mode, inputValue]);
+
+                return {
+                    factor,
+                    targetBatches,
+                    referenceLabel,
+                    sections: finalSections,
+                    totalGrossKg: grandTotalGrossKg,
+                    finalProductWeightKg
+                };
+
+            }, [selectedRecipe, mode, inputValue, basisItem]);
+
+            const logoSrc = useMemo(() => {
+                const saved = localStorage.getItem('prod_settings');
+                if(saved) {
+                    const parsed = JSON.parse(saved);
+                    return parsed.logo;
+                }
+                return null;
+            }, []);
 
             return (
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><Icon name="ClipboardList" className="text-primary" /> Gerar Ordem de Produção</h2>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-6 border-b border-gray-100 no-print">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <Icon name="ClipboardList" className="text-primary" />
+                            Gerar Ordem de Produção
+                        </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div><label className="block text-sm font-medium text-slate-700 mb-1">Linha de Produção</label><div className="w-full"><SearchableSelect options={[{label: 'Todas as Linhas', value: ''}, ...lines.map(l => ({label: l, value: l}))]} value={selectedLine} onChange={(val) => { setSelectedLine(val); setSelectedRecipeId(''); }} placeholder="Filtrar Linha" /></div></div>
-                            <div className="md:col-span-2"><label className="block text-sm font-medium text-slate-700 mb-1">Selecione a Receita</label><div className="w-full"><SearchableSelect options={filteredRecipes.map(r => ({label: r.name, value: r.id}))} value={selectedRecipeId} onChange={setSelectedRecipeId} placeholder="Buscar Receita" disabled={filteredRecipes.length === 0} /></div></div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Linha de Produção</label>
+                                <div className="w-full">
+                                    <SearchableSelect 
+                                        options={[{label: 'Todas as Linhas', value: ''}, ...lines.map(l => ({label: l, value: l}))]}
+                                        value={selectedLine}
+                                        onChange={(val) => { setSelectedLine(val); setSelectedRecipeId(''); }}
+                                        placeholder="Filtrar Linha"
+                                    />
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Selecione a Receita</label>
+                                <div className="w-full">
+                                    <SearchableSelect 
+                                        options={filteredRecipes.map(r => ({label: r.name, value: r.id}))}
+                                        value={selectedRecipeId}
+                                        onChange={setSelectedRecipeId}
+                                        placeholder="Buscar Receita"
+                                        disabled={filteredRecipes.length === 0}
+                                    />
+                                </div>
+                            </div>
                         </div>
+
                         {selectedRecipe && (
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                <div className="flex flex-col md:flex-row gap-4 items-end">
-                                    <div className="flex-1 w-full"><label className="block text-xs uppercase tracking-wider text-slate-500 font-bold mb-2">Meta de Produção</label><div className="flex bg-white rounded-lg p-1 border border-slate-200"><button onClick={() => setMode('batch')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${mode === 'batch' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}>Por Bateladas</button><button onClick={() => setMode('target')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${mode === 'target' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}>Por Quantidade (Kg)</button></div></div>
-                                    <div className="flex-1 w-full"><label className="block text-sm font-medium text-slate-700 mb-1">{mode === 'batch' ? 'Número de Bateladas' : 'Quantidade Final Desejada (Kg)'}</label><input type="number" min="0" step="0.0001" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold text-slate-800" /></div>
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex bg-white rounded-lg p-1 border border-gray-200 overflow-x-auto">
+                                        <button onClick={() => setMode('batch')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'batch' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Por Bateladas</button>
+                                        <button onClick={() => setMode('target')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'target' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Peso Final Total</button>
+                                        <button onClick={() => setMode('proportional')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'proportional' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Proporcional (Item)</button>
+                                    </div>
+                                    
+                                    <div className="flex flex-col md:flex-row gap-4 items-end">
+                                        {mode === 'proportional' && (
+                                            <div className="flex-1 w-full">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Basear cálculo em:</label>
+                                                <SearchableSelect 
+                                                    options={basisOptions}
+                                                    value={basisItem}
+                                                    onChange={setBasisItem}
+                                                    placeholder="Ex: Massa, Farinha..."
+                                                />
+                                            </div>
+                                        )}
+                                        
+                                        <div className="flex-1 w-full">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                {mode === 'batch' ? 'Número de Bateladas' : 
+                                                mode === 'target' ? 'Quantidade Final Desejada (Kg)' :
+                                                'Quantidade que você tem (Kg)'}
+                                            </label>
+                                            <input type="number" min="0" step="0.0001" value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold text-gray-800" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
+
                     {calculation && (
-                        <div className="p-6 bg-slate-50/50">
-                            <div className="mb-6 flex flex-wrap gap-4 justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                                <div><p className="text-sm text-slate-500">Total Bateladas</p><p className="text-2xl font-bold text-slate-800">{calculation.targetBatches.toFixed(4)}</p></div>
-                                <div><p className="text-sm text-slate-500">Total Bruto (Compras)</p><p className="text-2xl font-bold text-slate-800">{calculation.totalGrossKg.toFixed(4)} <span className="text-sm font-normal text-slate-400">kg</span></p></div>
+                        <div className="p-6 bg-gray-50/30">
+                            <div className="print-header print-only hidden">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    {logoSrc && <img src={logoSrc} alt="Logo" style={{ height: '50px', objectFit: 'contain' }} />}
+                                    <div>
+                                        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>ORDEM DE PRODUÇÃO</h1>
+                                        <p style={{ margin: 0, fontSize: '12px' }}>{selectedRecipe.name}</p>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right', fontSize: '12px' }}>
+                                    <p style={{ margin: 0 }}>Data: {new Date().toLocaleDateString()}</p>
+                                    <p style={{ margin: 0 }}>Ref: {calculation.referenceLabel}</p>
+                                </div>
+                            </div>
+
+                            <div className="mb-6 flex flex-wrap gap-4 justify-between items-center bg-white p-4 rounded-lg border border-gray-200 shadow-sm no-print">
+                                <div><p className="text-sm text-gray-500">Ref. Cálculo</p><p className="text-lg font-bold text-gray-800">{calculation.referenceLabel}</p></div>
                                 <div className="text-right"><p className="text-sm text-emerald-600 font-medium">Produto Final Estimado</p><p className="text-3xl font-bold text-emerald-600">{calculation.finalProductWeightKg.toFixed(4)} <span className="text-lg">kg</span></p></div>
                             </div>
+
                             <div className="space-y-6">
-                                {calculation.sections.map((section, sIdx) => (
-                                    <div key={sIdx} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                                        <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 flex justify-between items-center"><div className="flex items-center gap-2"><span className="font-bold text-slate-700">{section.name}</span><span className="text-xs bg-white border border-slate-300 px-2 py-0.5 rounded-full text-slate-500">Meta Perda: {section.processLossPct.toFixed(2)}%</span></div><div className="text-xs text-slate-500">Meta Peso Final: <strong>{section.finalWeightKg.toFixed(4)} kg</strong></div></div>
-                                        <table className="w-full text-left text-sm"><thead className="bg-white text-slate-500 uppercase text-[10px] font-bold border-b border-slate-100"><tr><th className="p-3 w-1/3">Ingrediente</th><th className="p-3 text-right">Qtd Receita</th><th className="p-3 text-right font-bold bg-slate-50">Qtd a Pesar (Bruto)</th></tr></thead><tbody className="divide-y divide-slate-100">{section.ingredients.map((ing, idx) => (<tr key={idx} className="hover:bg-slate-50"><td className="p-3 font-medium text-slate-800">{ing.name}</td><td className="p-3 text-right font-medium text-blue-600">{ing.calcNet.toFixed(4)} <span className="text-[10px] text-slate-400">{ing.unit}</span></td><td className="p-3 text-right font-bold text-slate-800 bg-slate-50">{ing.calcGrossKg.toFixed(4)} <span className="text-[10px] text-slate-400">kg</span></td></tr>))}</tbody></table>
+                                <div className="print-only hidden">
+                                    <table className="print-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: '40%' }}>INGREDIENTE</th>
+                                                <th style={{ width: '20%', textAlign: 'right' }}>QTD (Receita)</th>
+                                                <th style={{ width: '20%', textAlign: 'right' }}>QTD REAL (Kg)</th>
+                                                <th style={{ width: '20%', textAlign: 'right' }}>CHECK</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {calculation.sections.map((section, sIdx) => (
+                                                <React.Fragment key={sIdx}>
+                                                    <tr className="print-section-header break-inside-avoid">
+                                                        <td colSpan="4">
+                                                            {section.name} (Perda: {section.processLossPct.toFixed(2)}% | Peso Final: {section.finalWeightKg.toFixed(4)} kg)
+                                                        </td>
+                                                    </tr>
+                                                    {section.ingredients.map((ing, idx) => (
+                                                        <tr key={`${sIdx}-${idx}`} className="break-inside-avoid">
+                                                            <td>{ing.name}</td>
+                                                            <td style={{ textAlign: 'right' }}>{ing.calcNet.toFixed(4)} {ing.unit}</td>
+                                                            <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{ing.calcGrossKg.toFixed(4)} kg</td>
+                                                            <td style={{ textAlign: 'center' }}>[ ]</td>
+                                                        </tr>
+                                                    ))}
+                                                </React.Fragment>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <div style={{ marginTop: '20px', borderTop: '1px solid #000', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span><strong>TOTAL BRUTO:</strong> {calculation.totalGrossKg.toFixed(4)} kg</span>
+                                        <span><strong>PRODUTO FINAL ESTIMADO:</strong> {calculation.finalProductWeightKg.toFixed(4)} kg</span>
                                     </div>
-                                ))}
+                                </div>
+
+                                <div className="no-print">
+                                    {calculation.sections.map((section, sIdx) => (
+                                        <div key={sIdx} className="overflow-hidden rounded-lg border border-gray-200 bg-white mb-4">
+                                            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                                                <div className="flex items-center gap-2"><span className="font-bold text-gray-700">{section.name}</span><span className="text-xs bg-white border border-gray-300 px-2 py-0.5 rounded-full text-gray-500">Perda: {section.processLossPct.toFixed(2)}%</span></div>
+                                                <div className="text-xs text-gray-500">Peso Esperado: <strong>{section.finalWeightKg.toFixed(4)} kg</strong></div>
+                                            </div>
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-white text-gray-500 uppercase text-[10px] font-bold border-b border-gray-100">
+                                                    <tr><th className="p-3 w-1/3">Ingrediente</th><th className="p-3 text-right">Qtd Calculada</th><th className="p-3 text-right font-bold bg-gray-50">Qtd Real (Kg)</th></tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {section.ingredients.map((ing, idx) => (
+                                                        <tr key={idx} className="hover:bg-gray-50">
+                                                            <td className="p-3 font-medium text-gray-800">{ing.name}</td>
+                                                            <td className="p-3 text-right font-medium text-blue-600">{ing.calcNet.toFixed(4)} <span className="text-[10px] text-gray-400">{ing.unit}</span></td>
+                                                            <td className="p-3 text-right font-bold text-gray-800 bg-gray-50">{ing.calcGrossKg.toFixed(4)} <span className="text-[10px] text-gray-400">kg</span></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="mt-6 flex justify-end gap-3 no-print"><button onClick={() => window.print()} className="px-6 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 shadow-lg flex items-center gap-2 font-bold w-full md:w-auto justify-center"><Icon name="ClipboardList" size={20} /> Imprimir Ordem de Produção</button></div>
+                            
+                            <div className="mt-6 flex justify-end gap-3 no-print">
+                                <button onClick={() => window.print()} className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 shadow-lg flex items-center gap-2 font-bold w-full md:w-auto justify-center">
+                                    <Icon name="ClipboardList" size={20} /> Imprimir Ordem
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -601,7 +941,7 @@
 
             const selectedRecipe = useMemo(() => recipes.find(r => r.id == selectedRecipeId), [recipes, selectedRecipeId]);
             const availableStages = useMemo(() => { if (!selectedRecipe) return []; return Object.keys(selectedRecipe.sections || {}); }, [selectedRecipe]);
-            
+
             const targetLossPct = selectedRecipe?.sections?.[selectedStage]?.processLossPct || 0;
             const targetYieldPct = 100 - targetLossPct;
             const targetTolerance = selectedRecipe?.sections?.[selectedStage]?.tolerancePct || 10;
@@ -618,7 +958,6 @@
                 const theoreticalInput = baseWeightPerBatch * batches;
                 if (theoreticalInput <= 0) { onError("Erro: Receita sem peso base nesta etapa."); return; }
 
-                // Rendimento Real (%) = (Peso Obtido / Peso Total Ingredientes) * 100
                 const actualYieldPct = (output / theoreticalInput) * 100;
 
                 const logEntry = {
@@ -650,58 +989,59 @@
 
             return (
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Icon name="Activity" className="text-primary" /> Monitoramento de Etapas (CEP)</h2></div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Icon name="Activity" className="text-primary" /> Monitoramento de Etapas (CEP)</h2></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="block text-sm font-medium text-slate-700 mb-1">Receita</label><div className="w-full"><SearchableSelect options={recipes.map(r => ({label: r.name, value: r.id}))} value={selectedRecipeId} onChange={(val) => { setSelectedRecipeId(val); setSelectedStage(''); }} placeholder="Buscar Receita" disabled={!!editingId} /></div></div>
-                            <div><label className="block text-sm font-medium text-slate-700 mb-1">Etapa para Verificar</label><div className="w-full"><SearchableSelect options={availableStages.map(s => ({label: s, value: s}))} value={selectedStage} onChange={setSelectedStage} placeholder="Selecione a Etapa" disabled={!selectedRecipeId || !!editingId} /></div></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Receita</label><div className="w-full"><SearchableSelect options={recipes.map(r => ({label: r.name, value: r.id}))} value={selectedRecipeId} onChange={(val) => { setSelectedRecipeId(val); setSelectedStage(''); }} placeholder="Buscar Receita" disabled={!!editingId} /></div></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Etapa para Verificar</label><div className="w-full"><SearchableSelect options={availableStages.map(s => ({label: s, value: s}))} value={selectedStage} onChange={setSelectedStage} placeholder="Selecione a Etapa" disabled={!selectedRecipeId || !!editingId} /></div></div>
                         </div>
+
                         {selectedStage && (
                             <form onSubmit={handleRegister} className={`mt-6 p-4 rounded-lg border ${editingId ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-100'}`}>
                                 <h3 className={`font-bold mb-3 text-sm ${editingId ? 'text-yellow-800' : 'text-blue-900'}`}>{editingId ? 'Editando Registro' : 'Registrar Novo Ponto'}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Data/Hora</label><input type="datetime-local" className="w-full p-2 border border-slate-200 rounded-lg text-sm" value={recordDate} onChange={e => setRecordDate(e.target.value)} /></div>
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Nº de Bateladas</label><input type="number" step="0.1" className="w-full p-2 border border-slate-200 rounded-lg text-sm" value={numBatches} onChange={e => setNumBatches(e.target.value)} /></div>
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Peso Final Real (Saída)</label><div className="flex items-center gap-2"><input type="number" step="0.0001" placeholder="0.0000" className="w-full p-2 border border-slate-200 rounded-lg text-sm" value={measuredWeightKg} onChange={e => setMeasuredWeightKg(e.target.value)} /><span className="text-xs">kg</span></div></div>
-                                    <div className="flex gap-2"><button type="submit" className={`flex-1 text-white p-2 rounded-lg font-bold text-sm shadow-sm ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-primary hover-bg-primary'}`}>{editingId ? 'Atualizar' : 'Salvar'}</button>{editingId && (<button type="button" onClick={handleCancelEdit} className="bg-slate-200 text-slate-600 p-2 rounded-lg font-bold text-sm hover:bg-slate-300">Cancelar</button>)}</div>
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Data/Hora</label><input type="datetime-local" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={recordDate} onChange={e => setRecordDate(e.target.value)} /></div>
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Nº de Bateladas</label><input type="number" step="0.1" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={numBatches} onChange={e => setNumBatches(e.target.value)} /></div>
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Peso Final Real (Saída)</label><div className="flex items-center gap-2"><input type="number" step="0.0001" placeholder="0.0000" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={measuredWeightKg} onChange={e => setMeasuredWeightKg(e.target.value)} /><span className="text-xs">kg</span></div></div>
+                                    <div className="flex gap-2"><button type="submit" className={`flex-1 text-white p-2 rounded-lg font-bold text-sm shadow-sm ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-primary hover-bg-primary'}`}>{editingId ? 'Atualizar' : 'Salvar'}</button>{editingId && (<button type="button" onClick={handleCancelEdit} className="bg-gray-200 text-gray-600 p-2 rounded-lg font-bold text-sm hover:bg-gray-300">Cancelar</button>)}</div>
                                 </div>
                             </form>
                         )}
                     </div>
                     {selectedStage && (
                         <div className="space-y-6 animate-fade-in">
-                            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center">
-                                <div className="flex items-center gap-2"><Icon name="Calendar" size={18} className="text-slate-400" /><span className="text-sm font-bold text-slate-700">Filtrar Histórico:</span></div>
-                                <div className="flex gap-2"><input type="date" className="p-2 border border-slate-300 rounded text-sm text-slate-600" value={startDate} onChange={(e) => setStartDate(e.target.value)} /><span className="text-slate-400 self-center">até</span><input type="date" className="p-2 border border-slate-300 rounded text-sm text-slate-600" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-wrap gap-4 items-center">
+                                <div className="flex items-center gap-2"><Icon name="Calendar" size={18} className="text-gray-400" /><span className="text-sm font-bold text-gray-700">Filtrar Histórico:</span></div>
+                                <div className="flex gap-2"><input type="date" className="p-2 border border-gray-300 rounded text-sm text-gray-600" value={startDate} onChange={(e) => setStartDate(e.target.value)} /><span className="text-gray-400 self-center">até</span><input type="date" className="p-2 border border-gray-300 rounded text-sm text-gray-600" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
                                 {(startDate || endDate) && <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-blue-500 hover:underline">Limpar</button>}
                             </div>
                             {chartData.length > 0 ? (
                                 <>
-                                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
                                         <div className="flex justify-between items-center mb-4">
-                                            <h3 className="font-bold text-slate-700">Carta de Controle: {selectedStage}</h3>
-                                            <div className="text-xs text-slate-500">Meta Teórica: <strong>{targetYieldPct.toFixed(2)}%</strong> (Base: Soma dos Insumos - Perda {targetLossPct.toFixed(2)}%)</div>
+                                            <h3 className="font-bold text-gray-700">Carta de Controle: {selectedStage}</h3>
+                                            <div className="text-xs text-gray-500">Meta Teórica: <strong>{targetYieldPct.toFixed(2)}%</strong> (Base: Soma dos Insumos - Perda {targetLossPct.toFixed(2)}%)</div>
                                         </div>
                                         <ControlChart data={chartData} targetYield={targetYieldPct} stageName={selectedStage} tolerance={targetTolerance} />
                                     </div>
-                                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                        <h3 className="font-bold text-slate-800 mb-4">Histórico Detalhado</h3>
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <h3 className="font-bold text-gray-800 mb-4">Histórico Detalhado</h3>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left text-sm">
-                                                <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                                                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                                                     <tr><th className="p-3">Data</th><th className="p-3 text-right">Bateladas</th><th className="p-3 text-right">Saída (kg)</th><th className="p-3 text-right font-bold">Rendimento</th><th className="p-3 text-right">Custo (+/-)</th><th className="p-3 text-right">Status</th><th className="p-3 text-right">Ações</th></tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className="divide-y divide-gray-100">
                                                     {[...chartData].reverse().map(log => {
                                                         const deviation = log.yieldPct - log.targetYieldPct;
                                                         const isCritical = Math.abs(deviation) > ((log.targetYieldPct * targetTolerance) / 100);
                                                         const costImpact = log.yieldPct ? ((log.targetYieldPct / log.yieldPct) - 1) * 100 : 0;
                                                         const costColor = costImpact > 0 ? 'text-red-500' : 'text-emerald-500';
                                                         return (
-                                                            <tr key={log.id} className="hover:bg-slate-50">
-                                                                <td className="p-3 text-slate-500 whitespace-nowrap">{new Date(log.date).toLocaleDateString()} {new Date(log.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                                                <td className="p-3 text-right text-slate-600">{log.batches}</td>
-                                                                <td className="p-3 text-right text-slate-800 font-medium">{log.outputKg.toFixed(4)}</td>
+                                                            <tr key={log.id} className="hover:bg-gray-50">
+                                                                <td className="p-3 text-gray-500 whitespace-nowrap">{new Date(log.date).toLocaleDateString()} {new Date(log.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                                                <td className="p-3 text-right text-gray-600">{log.batches}</td>
+                                                                <td className="p-3 text-right text-gray-800 font-medium">{log.outputKg.toFixed(4)}</td>
                                                                 <td className="p-3 text-right font-bold text-blue-600">{log.yieldPct.toFixed(2)}%</td>
                                                                 <td className={`p-3 text-right font-medium ${costColor}`}>{costImpact > 0 ? '+' : ''}{costImpact.toFixed(2)}%</td>
                                                                 <td className={`p-3 text-right font-medium ${isCritical ? 'text-red-600 font-bold' : 'text-emerald-500'}`}>{isCritical ? 'CRÍTICO' : 'OK'}</td>
@@ -714,14 +1054,14 @@
                                         </div>
                                     </div>
                                 </>
-                            ) : (<div className="bg-slate-50 p-8 rounded-lg text-center text-slate-400 border border-dashed">Nenhum dado encontrado para o período selecionado.</div>)}
+                            ) : (<div className="bg-gray-50 p-8 rounded-lg text-center text-gray-400 border border-dashed">Nenhum dado encontrado para o período selecionado.</div>)}
                         </div>
                     )}
                 </div>
             );
         };
 
-        // --- Componente Principal (App) ---
+        // --- App Componente Principal ---
         const App = () => {
             const [view, setView] = useState('dashboard');
             const [settings, setSettings] = useState(() => {
@@ -744,22 +1084,20 @@
                 const saved = localStorage.getItem('prod_monitoring_logs');
                 return saved ? JSON.parse(saved) : [];
             });
+            
             const [editingRecipe, setEditingRecipe] = useState(null);
+            const [viewingRecipe, setViewingRecipe] = useState(null);
             const [notification, setNotification] = useState(null);
 
-            // Efeitos de Persistência
             useEffect(() => { localStorage.setItem('prod_settings', JSON.stringify(settings)); }, [settings]);
             useEffect(() => { localStorage.setItem('prod_recipes', JSON.stringify(recipes)); }, [recipes]);
             useEffect(() => { localStorage.setItem('prod_monitoring_logs', JSON.stringify(logs)); }, [logs]);
             useEffect(() => { localStorage.setItem('prod_lines', JSON.stringify(lines)); }, [lines]);
             useEffect(() => { localStorage.setItem('prod_stages', JSON.stringify(stages)); }, [stages]);
 
-            // Atualiza Variáveis CSS de Tema
             useEffect(() => {
                 if (settings.themeColor) {
                     document.documentElement.style.setProperty('--primary', settings.themeColor);
-                    // Simples lógica para darken
-                    // Para um app real, usaríamos uma lib de cor. Aqui confiaremos no CSS filter ou opacidade se necessário
                 }
             }, [settings.themeColor]);
 
@@ -774,73 +1112,234 @@
             const addLog = (logEntry) => { setLogs([...logs, logEntry]); showNotification("Registro salvo com sucesso!"); };
             const updateLog = (updatedLog) => { setLogs(logs.map(l => l.id === updatedLog.id ? updatedLog : l)); showNotification("Registro atualizado!"); };
             const deleteLog = (id) => { setLogs(logs.filter(l => l.id !== id)); showNotification("Registro excluído."); };
+            
             const saveRecipe = (recipe) => {
                 if (recipe.id) { setRecipes(recipes.map(r => r.id === recipe.id ? recipe : r)); } 
                 else { setRecipes([...recipes, { ...recipe, id: Date.now() }]); }
-                setEditingRecipe(null); setView('recipes'); showNotification("Receita salva com sucesso!");
+                setEditingRecipe(null); 
+                setViewingRecipe(null); 
+                setView('recipes'); 
+                showNotification("Receita salva com sucesso!");
             };
-            const deleteRecipe = (id) => { setRecipes(recipes.filter(r => r.id !== id)); showNotification("Receita excluída."); };
+            
+            const deleteRecipe = (id) => { 
+                setRecipes(recipes.filter(r => r.id !== id)); 
+                setViewingRecipe(null);
+                showNotification("Receita excluída."); 
+            };
 
             const handleImportExcel = (file) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const bstr = e.target.result;
                     try {
-                        const wb = XLSX.read(bstr, { type: 'binary' });
-                        const wsname = wb.SheetNames[0];
-                        const ws = wb.Sheets[wsname];
-                        const data = XLSX.utils.sheet_to_json(ws);
-                        if (data.length === 0) { showNotification("Planilha vazia.", 'error'); return; }
+                        if (typeof window.XLSX === 'undefined') {
+                        showNotification("Biblioteca XLSX ainda carregando. Tente novamente em 2 segundos.", 'error');
+                        return;
+                        }
+                        
+                        const data = new Uint8Array(e.target.result);
+                        const wb = window.XLSX.read(data, { type: 'array' });
+                        
+                        let newRecipesCount = 0;
+                        const importedRecipes = [];
 
-                        const grouped = {};
-                        data.forEach(row => {
-                            const rName = row['Receita'];
-                            if(!rName) return;
-                            if(!grouped[rName]) { grouped[rName] = { id: Date.now() + Math.random(), name: rName, line: row['Linha'] || 'Geral', sections: {}, ingredients: [] }; }
-                            const section = row['Etapa'] || 'Massa';
-                            if(!grouped[rName].sections[section]) { grouped[rName].sections[section] = { processLossPct: parseFloat(row['PerdaEtapa']) || 0, tolerancePct: parseFloat(row['Tolerancia']) || 10 }; }
-                            grouped[rName].ingredients.push({ name: row['Ingrediente'], qty: parseFloat(row['Qtd']), unit: row['Unidade'] || 'kg', lossPct: parseFloat(row['PerdaIngrediente']) || 0, section: section });
+                        wb.SheetNames.forEach(wsname => {
+                            const ws = wb.Sheets[wsname];
+                            const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1 });
+                            
+                            if (!rows || rows.length === 0) return;
+
+                            let recipeName = `Receita ${wsname}`;
+                            let nameFound = false;
+                            for(let i=0; i<Math.min(rows.length, 10); i++) {
+                                const row = rows[i];
+                                if (row && row[0]) {
+                                    const str = String(row[0]).toUpperCase();
+                                    if (str.includes('PREPARAÇÃO:') || str.includes('PRODUTO:')) {
+                                        recipeName = str.replace('PREPARAÇÃO:', '').replace('PRODUTO:', '').trim();
+                                        nameFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            let headerRowIndex = -1;
+                            let colMap = { ingredient: -1, qty: -1, unit: -1, section: 0 }; 
+
+                            for(let i=0; i<Math.min(rows.length, 20); i++) {
+                                const row = rows[i];
+                                if (!row) continue;
+                                
+                                row.forEach((cell, idx) => {
+                                    if (String(cell).toLowerCase().includes('ingrediente')) {
+                                        headerRowIndex = i;
+                                        colMap.ingredient = idx;
+                                    }
+                                    if (String(cell).toLowerCase().includes('quantidade') || String(cell).toLowerCase() === 'qtd') {
+                                        colMap.qty = idx;
+                                    }
+                                });
+                                
+                                if (headerRowIndex !== -1) break;
+                            }
+
+                            if (headerRowIndex === -1 || colMap.ingredient === -1) {
+                                colMap = { ingredient: 4, qty: 8, unit: 9, section: 0 };
+                                headerRowIndex = 5; 
+                            } else {
+                                if (colMap.qty === -1) colMap.qty = colMap.ingredient + 4; 
+                                if (colMap.unit === -1) colMap.unit = colMap.qty + 1; 
+                            }
+
+                            const ingredients = [];
+                            const sectionsMap = {};
+                            let currentSection = 'Geral';
+
+                            for(let i = headerRowIndex + 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                if (!row) continue;
+
+                                const rawSection = row[colMap.section];
+                                if (rawSection && typeof rawSection === 'string' && rawSection.trim().length > 2) {
+                                    const candidate = rawSection.trim();
+                                    if (!candidate.includes('TOTAL') && !candidate.includes('RENDIMENTO') && !candidate.includes('PESO')) {
+                                        currentSection = candidate;
+                                    }
+                                }
+
+                                if (!sectionsMap[currentSection]) {
+                                    sectionsMap[currentSection] = { processLossPct: 0, tolerancePct: 10 };
+                                }
+
+                                const rawIng = row[colMap.ingredient];
+                                const rawQty = row[colMap.qty];
+                                const rawUnit = row[colMap.unit];
+
+                                if (rawIng && typeof rawIng === 'string' && rawIng.trim().length > 0) {
+                                    if (rawIng.toUpperCase().includes('TOTAL')) continue;
+                                    
+                                    const qtyVal = parseFloat(rawQty);
+                                    if (!isNaN(qtyVal)) {
+                                        ingredients.push({
+                                            name: rawIng.trim(),
+                                            qty: qtyVal,
+                                            unit: String(rawUnit || 'kg').toLowerCase().trim(),
+                                            lossPct: 0,
+                                            section: currentSection
+                                        });
+                                    }
+                                }
+                            }
+
+                            if (ingredients.length > 0) {
+                                importedRecipes.push({
+                                    id: Date.now() + Math.random(), 
+                                    name: recipeName,
+                                    line: 'Importadas',
+                                    sections: sectionsMap,
+                                    ingredients: ingredients
+                                });
+                                newRecipesCount++;
+                            }
                         });
-                        setRecipes([...recipes, ...Object.values(grouped)]);
-                        showNotification(`${Object.values(grouped).length} receitas importadas!`);
+
+                        if (newRecipesCount === 0) {
+                            showNotification("Nenhuma receita válida encontrada no arquivo.", 'error');
+                            return;
+                        }
+
+                        setRecipes(prev => [...prev, ...importedRecipes]);
+                        showNotification(`${newRecipesCount} receitas importadas com sucesso!`);
+
                     } catch (error) {
-                        showNotification("Erro ao ler arquivo. Verifique o formato.", 'error');
+                        console.error(error);
+                        showNotification("Erro ao processar arquivo. Verifique se é um Excel válido.", 'error');
                     }
                 };
-                reader.readAsBinaryString(file);
+                reader.readAsArrayBuffer(file);
+            };
+
+            const handleViewRecipe = (recipe) => {
+                setViewingRecipe(recipe);
+                setEditingRecipe(null);
+            };
+
+            const handleEditRecipe = (recipe) => {
+                setEditingRecipe(recipe);
+                setViewingRecipe(null);
+            };
+
+            const handleCreateRecipe = () => {
+                setEditingRecipe({name: '', line: lines[0], baseYieldKg: 0, processLossPct: 0, ingredients: [{ name: '', qty: 0, unit: 'kg', lossPct: 0, section: stages[0] }]});
+                setViewingRecipe(null);
+            };
+
+            const handleBackToList = () => {
+                setViewingRecipe(null);
+                setEditingRecipe(null);
             };
 
             return (
                 <div className="flex flex-col min-h-screen relative">
+                    <GlobalStyles />
                     {notification && (<div className="fixed top-4 right-4 z-50 toast-enter no-print"><div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-600'}`}><Icon name={notification.type === 'error' ? 'X' : 'CheckCircle'} size={20} /><span className="font-medium">{notification.message}</span></div></div>)}
 
-                    <header className="bg-slate-900 text-white p-4 shadow-lg no-print">
+                    <header className="bg-gray-800 text-white p-4 shadow-lg no-print">
                         <div className="container mx-auto flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 {settings.logo ? <img src={settings.logo} className="h-10 w-auto object-contain bg-white rounded p-1" alt="Logo" /> : <Icon name="ChefHat" className="text-primary" size={32} />}
                                 <h1 className="text-xl font-bold tracking-tight">Controle de Rendimentos</h1>
                             </div>
                             <nav className="flex gap-4 text-sm font-medium">
-                                <button onClick={() => setView('dashboard')} className={`hover:text-blue-300 transition-colors ${view === 'dashboard' ? 'text-primary' : 'text-slate-300'}`}>Painel</button>
-                                <button onClick={() => setView('production')} className={`hover:text-blue-300 transition-colors ${view === 'production' ? 'text-primary' : 'text-slate-300'}`}>Produção</button>
-                                <button onClick={() => setView('monitoring')} className={`hover:text-blue-300 transition-colors ${view === 'monitoring' ? 'text-primary' : 'text-slate-300'}`}>Monitoramento</button>
-                                <button onClick={() => setView('recipes')} className={`hover:text-blue-300 transition-colors ${view === 'recipes' ? 'text-primary' : 'text-slate-300'}`}>Receitas</button>
-                                <button onClick={() => setView('settings')} className={`hover:text-blue-300 transition-colors ${view === 'settings' ? 'text-primary' : 'text-slate-300'}`} title="Configurações"><Icon name="Settings" size={18} /></button>
+                                <button onClick={() => { setView('dashboard'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'dashboard' ? 'text-primary' : 'text-gray-300'}`}>Painel</button>
+                                <button onClick={() => { setView('production'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'production' ? 'text-primary' : 'text-gray-300'}`}>Produção</button>
+                                <button onClick={() => { setView('monitoring'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'monitoring' ? 'text-primary' : 'text-gray-300'}`}>Monitoramento</button>
+                                <button onClick={() => { setView('recipes'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'recipes' ? 'text-primary' : 'text-gray-300'}`}>Receitas</button>
+                                <button onClick={() => { setView('settings'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'settings' ? 'text-primary' : 'text-gray-300'}`} title="Configurações"><Icon name="Settings" size={18} /></button>
                             </nav>
                         </div>
                     </header>
 
                     <main className="flex-1 container mx-auto p-4 md:p-6">
-                        {view === 'dashboard' && <Dashboard setView={setView} />}
+                        {view === 'dashboard' && <Dashboard setView={(v) => { setView(v); handleBackToList(); }} />}
                         {view === 'production' && <ProductionOrders recipes={recipes} lines={lines} onError={(msg) => showNotification(msg, 'error')} />}
                         {view === 'monitoring' && <MonitoringView recipes={recipes} logs={logs} onSaveLog={addLog} onUpdateLog={updateLog} onDeleteLog={deleteLog} onError={(msg) => showNotification(msg, 'error')} />}
-                        {view === 'recipes' && !editingRecipe && <RecipeList recipes={recipes} lines={lines} onImport={handleImportExcel} onEdit={(r) => { setEditingRecipe(r); }} onCreate={() => setEditingRecipe({name: '', line: lines[0], baseYieldKg: 0, processLossPct: 0, ingredients: [{ name: '', qty: 0, unit: 'kg', lossPct: 0, section: stages[0] }]})} onDelete={deleteRecipe} />}
-                        {view === 'recipes' && editingRecipe && <RecipeEditor recipe={editingRecipe} lines={lines} stages={stages} onSave={saveRecipe} onCancel={() => setEditingRecipe(null)} onError={(msg) => showNotification(msg, 'error')} />}
+                        
+                        {view === 'recipes' && !editingRecipe && !viewingRecipe && (
+                            <RecipeList 
+                                recipes={recipes} 
+                                lines={lines} 
+                                onImport={handleImportExcel} 
+                                onView={handleViewRecipe} 
+                                onCreate={handleCreateRecipe} 
+                            />
+                        )}
+                        
+                        {view === 'recipes' && viewingRecipe && !editingRecipe && (
+                            <RecipeDetails 
+                                recipe={viewingRecipe} 
+                                onEdit={handleEditRecipe} 
+                                onBack={handleBackToList} 
+                                onDelete={deleteRecipe} 
+                            />
+                        )}
+
+                        {view === 'recipes' && editingRecipe && (
+                            <RecipeEditor 
+                                recipe={editingRecipe} 
+                                lines={lines} 
+                                stages={stages} 
+                                onSave={saveRecipe} 
+                                onCancel={handleBackToList} 
+                                onError={(msg) => showNotification(msg, 'error')} 
+                            />
+                        )}
+                        
                         {view === 'settings' && <SettingsView lines={lines} setLines={setLines} stages={stages} setStages={setStages} settings={settings} setSettings={setSettings} onError={(msg) => showNotification(msg, 'error')} showNotification={showNotification} />}
                     </main>
 
-                    <footer className="bg-slate-100 p-6 text-center text-slate-500 text-sm border-t border-slate-200 mt-auto no-print">
-                        <p className="italic font-serif text-slate-600 mb-2">"Não se gerencia o que não se mede, não se mede o que não se define, não se define o que não se entende e não há sucesso no que não se gerencia."</p>
+                    <footer className="bg-gray-100 p-6 text-center text-gray-500 text-sm border-t border-gray-200 mt-auto no-print">
+                        <p className="italic font-serif text-gray-600 mb-2">"Não se gerencia o que não se mede, não se mede o que não se define, não se define o que não se entende e não há sucesso no que não se gerencia."</p>
                         <p>© 2025 Sistema de Gestão de Produção</p>
                     </footer>
                 </div>
