@@ -765,7 +765,7 @@
                 if (mode === 'batch') {
                     factor = parseFloat(inputValue) || 0;
                     targetBatches = factor;
-                    referenceLabel = `${factor} Bateladas`;
+                    referenceLabel = `${factor} Receitas`;
                 } else if (mode === 'target') {
                     const targetKg = (parseFloat(inputValue) || 0);
                     if (totalNetYieldKg > 0) factor = targetKg / totalNetYieldKg;
@@ -882,7 +882,7 @@
                             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div className="flex flex-col gap-4">
                                     <div className="flex bg-white rounded-lg p-1 border border-gray-200 overflow-x-auto">
-                                        <button onClick={() => setMode('batch')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'batch' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Por Bateladas</button>
+                                        <button onClick={() => setMode('batch')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'batch' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Por Receitas</button>
                                         <button onClick={() => setMode('target')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'target' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Peso Final Total</button>
                                         <button onClick={() => setMode('proportional')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${mode === 'proportional' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>Proporcional (Item)</button>
                                     </div>
@@ -902,7 +902,7 @@
                                         
                                         <div className="flex-1 w-full">
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                {mode === 'batch' ? 'Número de Bateladas' : 
+                                                {mode === 'batch' ? 'Número de Receitas' : 
                                                 mode === 'target' ? 'Quantidade Final Desejada (Kg)' :
                                                 'Quantidade que você tem (Kg)'}
                                             </label>
@@ -927,7 +927,7 @@
                                 <div style={{ textAlign: 'right', fontSize: '12px' }}>
                                     <p style={{ margin: 0 }}>Data: {new Date().toLocaleDateString()}</p>
                                     <p style={{ margin: 0 }}>Ref: {calculation.referenceLabel}</p>
-                                    <p style={{ margin: 0, fontWeight: 'bold' }}>Bateladas Equivalentes: {calculation.targetBatches.toFixed(4)}</p>
+                                    <p style={{ margin: 0, fontWeight: 'bold' }}>Receitas Equivalentes: {calculation.targetBatches.toFixed(4)}</p>
                                 </div>
                             </div>
 
@@ -938,7 +938,7 @@
                                 </div>
                                 
                                 <div className="text-center bg-orange-50 px-4 py-2 rounded-lg border border-orange-100">
-                                    <p className="text-xs text-orange-500 font-bold uppercase tracking-wider">Bateladas Equivalentes</p>
+                                    <p className="text-xs text-orange-500 font-bold uppercase tracking-wider">Receitas Equivalentes</p>
                                     <p className="text-2xl font-bold text-orange-700">{calculation.targetBatches.toFixed(4)}</p>
                                 </div>
 
@@ -1041,7 +1041,7 @@
                 if (!selectedRecipeId || !selectedStage || !measuredWeightKg || !numBatches || !recordDate) { onError("Preencha todos os campos."); return; }
                 const batches = parseFloat(numBatches);
                 const output = parseFloat(measuredWeightKg);
-                if (batches <= 0) { onError("Número de bateladas inválido."); return; }
+                if (batches <= 0) { onError("Número de receitas inválido."); return; }
 
                 const sectionIngs = selectedRecipe.ingredients.filter(i => (i.section || 'Massa') === selectedStage);
                 const baseWeightPerBatch = sectionIngs.reduce((acc, curr) => acc + toKg(curr.qty, curr.unit), 0);
@@ -1089,7 +1089,7 @@
                         "Data": new Date(log.date).toLocaleString(),
                         "Receita": log.recipeName,
                         "Etapa": log.stage,
-                        "Bateladas": log.batches,
+                        "Nº Receitas": log.batches,
                         "Peso Saída (kg)": log.outputKg,
                         "Rendimento Real (%)": (log.yieldPct || 0).toFixed(2),
                         "Meta (%)": (log.targetYieldPct || 0).toFixed(2),
@@ -1117,7 +1117,7 @@
                                 <h3 className={`font-bold mb-3 text-sm ${editingId ? 'text-yellow-800' : 'text-blue-900'}`}>{editingId ? 'Editando Registro' : 'Registrar Novo Ponto'}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                                     <div><label className="block text-xs font-bold mb-1 opacity-70">Data/Hora</label><input type="datetime-local" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={recordDate} onChange={e => setRecordDate(e.target.value)} /></div>
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Nº de Bateladas</label><input type="number" step="0.1" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={numBatches} onChange={e => setNumBatches(e.target.value)} /></div>
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Nº de Receitas</label><input type="number" step="0.1" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={numBatches} onChange={e => setNumBatches(e.target.value)} /></div>
                                     <div><label className="block text-xs font-bold mb-1 opacity-70">Peso Final Real (Saída)</label><div className="flex items-center gap-2"><input type="number" step="0.0001" placeholder="0.0000" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={measuredWeightKg} onChange={e => setMeasuredWeightKg(e.target.value)} /><span className="text-xs">kg</span></div></div>
                                     <div className="flex gap-2"><button type="submit" className={`flex-1 text-white p-2 rounded-lg font-bold text-sm shadow-sm ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-primary hover-bg-primary'}`}>{editingId ? 'Atualizar' : 'Salvar'}</button>{editingId && (<button type="button" onClick={handleCancelEdit} className="bg-gray-200 text-gray-600 p-2 rounded-lg font-bold text-sm hover:bg-gray-300">Cancelar</button>)}</div>
                                 </div>
@@ -1150,7 +1150,7 @@
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left text-sm">
                                                 <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                                                    <tr><th className="p-3">Data</th><th className="p-3 text-right">Bateladas</th><th className="p-3 text-right">Saída (kg)</th><th className="p-3 text-right font-bold">Rendimento</th><th className="p-3 text-right">Custo (+/-)</th><th className="p-3 text-right">Status</th><th className="p-3 text-right">Ações</th></tr>
+                                                    <tr><th className="p-3">Data</th><th className="p-3 text-right">Nº Receitas</th><th className="p-3 text-right">Saída (kg)</th><th className="p-3 text-right font-bold">Rendimento</th><th className="p-3 text-right">Custo (+/-)</th><th className="p-3 text-right">Status</th><th className="p-3 text-right">Ações</th></tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
                                                     {[...chartData].reverse().map(log => {
