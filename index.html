@@ -923,16 +923,19 @@
                                 <div style={{ textAlign: 'right', fontSize: '12px' }}>
                                     <p style={{ margin: 0 }}>Data: {new Date().toLocaleDateString()}</p>
                                     <p style={{ margin: 0 }}>Ref: {calculation.referenceLabel}</p>
-                                    <p style={{ margin: 0 }}>Bateladas: {calculation.targetBatches.toFixed(2)}</p>
+                                    <p style={{ margin: 0, fontWeight: 'bold' }}>Bateladas Equivalentes: {calculation.targetBatches.toFixed(4)}</p>
                                 </div>
                             </div>
 
                             <div className="mb-6 flex flex-wrap gap-4 justify-between items-center bg-white p-4 rounded-lg border border-gray-200 shadow-sm no-print">
-                                <div><p className="text-sm text-gray-500">Ref. Cálculo</p><p className="text-lg font-bold text-gray-800">{calculation.referenceLabel}</p></div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Ref. Cálculo</p>
+                                    <p className="text-lg font-bold text-gray-800">{calculation.referenceLabel}</p>
+                                </div>
                                 
-                                <div className="text-center">
-                                    <p className="text-sm text-gray-500">Bateladas</p>
-                                    <p className="text-xl font-bold text-blue-600">{calculation.targetBatches.toFixed(2)}</p>
+                                <div className="text-center bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                                    <p className="text-xs text-blue-500 font-bold uppercase tracking-wider">Bateladas Equivalentes</p>
+                                    <p className="text-2xl font-bold text-blue-700">{calculation.targetBatches.toFixed(4)}</p>
                                 </div>
 
                                 <div className="text-right"><p className="text-sm text-emerald-600 font-medium">Produto Final Estimado</p><p className="text-3xl font-bold text-emerald-600">{calculation.finalProductWeightKg.toFixed(4)} <span className="text-lg">kg</span></p></div>
@@ -1011,3 +1014,456 @@
                 </div>
             );
         };
+
+        const MonitoringView = ({ recipes, logs, onSaveLog, onError, onUpdateLog, onDeleteLog }) => {
+            const [selectedRecipeId, setSelectedRecipeId] = useState('');
+            const [selectedStage, setSelectedStage] = useState('');
+            const [measuredWeightKg, setMeasuredWeightKg] = useState('');
+            const [numBatches, setNumBatches] = useState('1'); 
+            const [editingId, setEditingId] = useState(null);
+            const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 16));
+            const [startDate, setStartDate] = useState('');
+            const [endDate, setEndDate] = useState('');
+
+            const selectedRecipe = useMemo(() => recipes.find(r => r.id == selectedRecipeId), [recipes, selectedRecipeId]);
+            const availableStages = useMemo(() => { if (!selectedRecipe) return []; return Object.keys(selectedRecipe.sections || {}); }, [selectedRecipe]);
+
+            const targetLossPct = selectedRecipe?.sections?.[selectedStage]?.processLossPct || 0;
+            const targetYieldPct = 100 - targetLossPct;
+            const targetTolerance = selectedRecipe?.sections?.[selectedStage]?.tolerancePct || 10;
+
+            const handleRegister = (e) => {
+                e.preventDefault();
+                if (!selectedRecipeId || !selectedStage || !measuredWeightKg || !numBatches || !recordDate) { onError("Preencha todos os campos."); return; }
+                const batches = parseFloat(numBatches);
+                const output = parseFloat(measuredWeightKg);
+                if (batches <= 0) { onError("Número de bateladas inválido."); return; }
+
+                const sectionIngs = selectedRecipe.ingredients.filter(i => (i.section || 'Massa') === selectedStage);
+                const baseWeightPerBatch = sectionIngs.reduce((acc, curr) => acc + toKg(curr.qty, curr.unit), 0);
+                const theoreticalInput = baseWeightPerBatch * batches;
+                if (theoreticalInput <= 0) { onError("Erro: Receita sem peso base nesta etapa."); return; }
+
+                const actualYieldPct = (output / theoreticalInput) * 100;
+
+                const logEntry = {
+                    id: editingId || Date.now(),
+                    date: recordDate,
+                    recipeId: selectedRecipeId,
+                    recipeName: selectedRecipe.name,
+                    stage: selectedStage,
+                    batches: batches,
+                    outputKg: output,
+                    yieldPct: actualYieldPct,
+                    targetYieldPct: targetYieldPct
+                };
+
+                if (editingId) { onUpdateLog(logEntry); setEditingId(null); } else { onSaveLog(logEntry); }
+                setMeasuredWeightKg(''); setNumBatches('1'); setRecordDate(new Date().toISOString().slice(0, 16));
+            };
+
+            const handleEdit = (log) => { setSelectedRecipeId(log.recipeId); setSelectedStage(log.stage); setMeasuredWeightKg(log.outputKg); setNumBatches(log.batches || 1); setEditingId(log.id); setRecordDate(log.date.slice(0, 16)); };
+            const handleCancelEdit = () => { setEditingId(null); setMeasuredWeightKg(''); setNumBatches('1'); setRecordDate(new Date().toISOString().slice(0, 16)); };
+            const handleDelete = (id) => { if (confirm("Tem certeza que deseja excluir este registro?")) onDeleteLog(id); };
+
+            const chartData = useMemo(() => {
+                let filtered = logs.filter(l => l.recipeId == selectedRecipeId && l.stage === selectedStage);
+                if (startDate) filtered = filtered.filter(l => new Date(l.date) >= new Date(startDate));
+                if (endDate) { const end = new Date(endDate); end.setHours(23, 59, 59, 999); filtered = filtered.filter(l => new Date(l.date) <= end); }
+                return filtered.sort((a, b) => new Date(a.date) - new Date(b.date)); 
+            }, [logs, selectedRecipeId, selectedStage, startDate, endDate]);
+
+            // NEW FUNCTION FOR EXPORT
+            const handleExportExcel = () => {
+                if (chartData.length === 0) return;
+
+                const dataToExport = chartData.map(log => {
+                    const deviation = log.yieldPct - log.targetYieldPct;
+                    const isCritical = Math.abs(deviation) > ((log.targetYieldPct * targetTolerance) / 100);
+                    
+                    return {
+                        "Data": new Date(log.date).toLocaleString(),
+                        "Receita": log.recipeName,
+                        "Etapa": log.stage,
+                        "Bateladas": log.batches,
+                        "Peso Saída (kg)": log.outputKg,
+                        "Rendimento Real (%)": (log.yieldPct || 0).toFixed(2),
+                        "Meta (%)": (log.targetYieldPct || 0).toFixed(2),
+                        "Status": isCritical ? 'CRÍTICO' : 'OK'
+                    };
+                });
+
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Dados do Gráfico");
+                XLSX.writeFile(wb, `Monitoramento_${selectedStage}_${new Date().toISOString().slice(0,10)}.xlsx`);
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Icon name="Activity" className="text-primary" /> Monitoramento de Etapas (CEP)</h2></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Receita</label><div className="w-full"><SearchableSelect options={recipes.map(r => ({label: r.name, value: r.id}))} value={selectedRecipeId} onChange={(val) => { setSelectedRecipeId(val); setSelectedStage(''); }} placeholder="Buscar Receita" disabled={!!editingId} /></div></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Etapa para Verificar</label><div className="w-full"><SearchableSelect options={availableStages.map(s => ({label: s, value: s}))} value={selectedStage} onChange={setSelectedStage} placeholder="Selecione a Etapa" disabled={!selectedRecipeId || !!editingId} /></div></div>
+                        </div>
+
+                        {selectedStage && (
+                            <form onSubmit={handleRegister} className={`mt-6 p-4 rounded-lg border ${editingId ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-100'}`}>
+                                <h3 className={`font-bold mb-3 text-sm ${editingId ? 'text-yellow-800' : 'text-blue-900'}`}>{editingId ? 'Editando Registro' : 'Registrar Novo Ponto'}</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Data/Hora</label><input type="datetime-local" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={recordDate} onChange={e => setRecordDate(e.target.value)} /></div>
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Nº de Bateladas</label><input type="number" step="0.1" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={numBatches} onChange={e => setNumBatches(e.target.value)} /></div>
+                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Peso Final Real (Saída)</label><div className="flex items-center gap-2"><input type="number" step="0.0001" placeholder="0.0000" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={measuredWeightKg} onChange={e => setMeasuredWeightKg(e.target.value)} /><span className="text-xs">kg</span></div></div>
+                                    <div className="flex gap-2"><button type="submit" className={`flex-1 text-white p-2 rounded-lg font-bold text-sm shadow-sm ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-primary hover-bg-primary'}`}>{editingId ? 'Atualizar' : 'Salvar'}</button>{editingId && (<button type="button" onClick={handleCancelEdit} className="bg-gray-200 text-gray-600 p-2 rounded-lg font-bold text-sm hover:bg-gray-300">Cancelar</button>)}</div>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                    {selectedStage && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-wrap gap-4 items-center">
+                                <div className="flex items-center gap-2"><Icon name="Calendar" size={18} className="text-gray-400" /><span className="text-sm font-bold text-gray-700">Filtrar Histórico:</span></div>
+                                <div className="flex gap-2"><input type="date" className="p-2 border border-gray-300 rounded text-sm text-gray-600" value={startDate} onChange={(e) => setStartDate(e.target.value)} /><span className="text-gray-400 self-center">até</span><input type="date" className="p-2 border border-gray-300 rounded text-sm text-gray-600" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+                                {(startDate || endDate) && <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-blue-500 hover:underline">Limpar</button>}
+                            </div>
+                            {chartData.length > 0 ? (
+                                <>
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="font-bold text-gray-700">Carta de Controle: {selectedStage}</h3>
+                                            <div className="text-xs text-gray-500">Meta Teórica: <strong>{targetYieldPct.toFixed(2)}%</strong> (Base: Soma dos Insumos - Perda {targetLossPct.toFixed(2)}%)</div>
+                                        </div>
+                                        <ControlChart data={chartData} targetYield={targetYieldPct} stageName={selectedStage} tolerance={targetTolerance} />
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="font-bold text-gray-800">Histórico Detalhado</h3>
+                                            <button onClick={handleExportExcel} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-xs">
+                                                <Icon name="Download" size={14} /> Exportar Excel
+                                            </button>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                                    <tr><th className="p-3">Data</th><th className="p-3 text-right">Bateladas</th><th className="p-3 text-right">Saída (kg)</th><th className="p-3 text-right font-bold">Rendimento</th><th className="p-3 text-right">Custo (+/-)</th><th className="p-3 text-right">Status</th><th className="p-3 text-right">Ações</th></tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {[...chartData].reverse().map(log => {
+                                                        const deviation = log.yieldPct - log.targetYieldPct;
+                                                        const isCritical = Math.abs(deviation) > ((log.targetYieldPct * targetTolerance) / 100);
+                                                        const costImpact = log.yieldPct ? ((log.targetYieldPct / log.yieldPct) - 1) * 100 : 0;
+                                                        const costColor = costImpact > 0 ? 'text-red-500' : 'text-emerald-500';
+                                                        return (
+                                                            <tr key={log.id} className="hover:bg-gray-50">
+                                                                <td className="p-3 text-gray-500 whitespace-nowrap">{new Date(log.date).toLocaleDateString()} {new Date(log.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                                                <td className="p-3 text-right text-gray-600">{log.batches}</td>
+                                                                <td className="p-3 text-right text-gray-800 font-medium">{log.outputKg.toFixed(4)}</td>
+                                                                <td className="p-3 text-right font-bold text-blue-600">{log.yieldPct.toFixed(2)}%</td>
+                                                                <td className={`p-3 text-right font-medium ${costColor}`}>{costImpact > 0 ? '+' : ''}{costImpact.toFixed(2)}%</td>
+                                                                <td className={`p-3 text-right font-medium ${isCritical ? 'text-red-600 font-bold' : 'text-emerald-500'}`}>{isCritical ? 'CRÍTICO' : 'OK'}</td>
+                                                                <td className="p-3 text-right flex justify-end gap-2"><button onClick={() => handleEdit(log)} className="text-primary hover:text-blue-800"><Icon name="Edit" size={16}/></button><button onClick={() => handleDelete(log.id)} className="text-red-500 hover:text-red-700"><Icon name="Trash2" size={16}/></button></td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (<div className="bg-gray-50 p-8 rounded-lg text-center text-gray-400 border border-dashed">Nenhum dado encontrado para o período selecionado.</div>)}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- App Componente Principal ---
+        const App = () => {
+            const [view, setView] = useState('dashboard');
+            const [settings, setSettings] = useState(() => {
+                const saved = localStorage.getItem('prod_settings');
+                return saved ? JSON.parse(saved) : { logo: null, themeColor: '#3b82f6' };
+            });
+            const [recipes, setRecipes] = useState(() => {
+                const saved = localStorage.getItem('prod_recipes');
+                return saved ? JSON.parse(saved) : initialRecipes;
+            });
+            const [lines, setLines] = useState(() => {
+                const saved = localStorage.getItem('prod_lines');
+                return saved ? JSON.parse(saved) : initialLines;
+            });
+            const [stages, setStages] = useState(() => {
+                const saved = localStorage.getItem('prod_stages');
+                return saved ? JSON.parse(saved) : initialStages;
+            });
+            const [logs, setLogs] = useState(() => {
+                const saved = localStorage.getItem('prod_monitoring_logs');
+                return saved ? JSON.parse(saved) : [];
+            });
+            
+            const [editingRecipe, setEditingRecipe] = useState(null);
+            const [viewingRecipe, setViewingRecipe] = useState(null);
+            const [notification, setNotification] = useState(null);
+
+            useEffect(() => { localStorage.setItem('prod_settings', JSON.stringify(settings)); }, [settings]);
+            useEffect(() => { localStorage.setItem('prod_recipes', JSON.stringify(recipes)); }, [recipes]);
+            useEffect(() => { localStorage.setItem('prod_monitoring_logs', JSON.stringify(logs)); }, [logs]);
+            useEffect(() => { localStorage.setItem('prod_lines', JSON.stringify(lines)); }, [lines]);
+            useEffect(() => { localStorage.setItem('prod_stages', JSON.stringify(stages)); }, [stages]);
+
+            useEffect(() => {
+                if (settings.themeColor) {
+                    document.documentElement.style.setProperty('--primary', settings.themeColor);
+                }
+            }, [settings.themeColor]);
+
+            useEffect(() => {
+                if (notification) {
+                    const timer = setTimeout(() => setNotification(null), 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [notification]);
+
+            const showNotification = (message, type = 'success') => setNotification({ message, type });
+            const addLog = (logEntry) => { setLogs([...logs, logEntry]); showNotification("Registro salvo com sucesso!"); };
+            const updateLog = (updatedLog) => { setLogs(logs.map(l => l.id === updatedLog.id ? updatedLog : l)); showNotification("Registro atualizado!"); };
+            const deleteLog = (id) => { setLogs(logs.filter(l => l.id !== id)); showNotification("Registro excluído."); };
+            
+            const saveRecipe = (recipe) => {
+                if (recipe.id) { setRecipes(recipes.map(r => r.id === recipe.id ? recipe : r)); } 
+                else { setRecipes([...recipes, { ...recipe, id: Date.now() }]); }
+                setEditingRecipe(null); 
+                setViewingRecipe(null); 
+                setView('recipes'); 
+                showNotification("Receita salva com sucesso!");
+            };
+            
+            const deleteRecipe = (id) => { 
+                setRecipes(recipes.filter(r => r.id !== id)); 
+                setViewingRecipe(null);
+                showNotification("Receita excluída."); 
+            };
+
+            const handleImportExcel = (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        if (typeof window.XLSX === 'undefined') {
+                        showNotification("Biblioteca XLSX ainda carregando. Tente novamente em 2 segundos.", 'error');
+                        return;
+                        }
+                        
+                        const data = new Uint8Array(e.target.result);
+                        const wb = window.XLSX.read(data, { type: 'array' });
+                        
+                        let newRecipesCount = 0;
+                        const importedRecipes = [];
+
+                        wb.SheetNames.forEach(wsname => {
+                            const ws = wb.Sheets[wsname];
+                            const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1 });
+                            
+                            if (!rows || rows.length === 0) return;
+
+                            let recipeName = `Receita ${wsname}`;
+                            let nameFound = false;
+                            for(let i=0; i<Math.min(rows.length, 10); i++) {
+                                const row = rows[i];
+                                if (row && row[0]) {
+                                    const str = String(row[0]).toUpperCase();
+                                    if (str.includes('PREPARAÇÃO:') || str.includes('PRODUTO:')) {
+                                        recipeName = str.replace('PREPARAÇÃO:', '').replace('PRODUTO:', '').trim();
+                                        nameFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            let headerRowIndex = -1;
+                            let colMap = { ingredient: -1, qty: -1, unit: -1, section: 0 }; 
+
+                            for(let i=0; i<Math.min(rows.length, 20); i++) {
+                                const row = rows[i];
+                                if (!row) continue;
+                                
+                                row.forEach((cell, idx) => {
+                                    if (String(cell).toLowerCase().includes('ingrediente')) {
+                                        headerRowIndex = i;
+                                        colMap.ingredient = idx;
+                                    }
+                                    if (String(cell).toLowerCase().includes('quantidade') || String(cell).toLowerCase() === 'qtd') {
+                                        colMap.qty = idx;
+                                    }
+                                });
+                                
+                                if (headerRowIndex !== -1) break;
+                            }
+
+                            if (headerRowIndex === -1 || colMap.ingredient === -1) {
+                                colMap = { ingredient: 4, qty: 8, unit: 9, section: 0 };
+                                headerRowIndex = 5; 
+                            } else {
+                                if (colMap.qty === -1) colMap.qty = colMap.ingredient + 4; 
+                                if (colMap.unit === -1) colMap.unit = colMap.qty + 1; 
+                            }
+
+                            const ingredients = [];
+                            const sectionsMap = {};
+                            let currentSection = 'Geral';
+
+                            for(let i = headerRowIndex + 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                if (!row) continue;
+
+                                const rawSection = row[colMap.section];
+                                if (rawSection && typeof rawSection === 'string' && rawSection.trim().length > 2) {
+                                    const candidate = rawSection.trim();
+                                    if (!candidate.includes('TOTAL') && !candidate.includes('RENDIMENTO') && !candidate.includes('PESO')) {
+                                        currentSection = candidate;
+                                    }
+                                }
+
+                                if (!sectionsMap[currentSection]) {
+                                    sectionsMap[currentSection] = { processLossPct: 0, tolerancePct: 10 };
+                                }
+
+                                const rawIng = row[colMap.ingredient];
+                                const rawQty = row[colMap.qty];
+                                const rawUnit = row[colMap.unit];
+
+                                if (rawIng && typeof rawIng === 'string' && rawIng.trim().length > 0) {
+                                    if (rawIng.toUpperCase().includes('TOTAL')) continue;
+                                    
+                                    const qtyVal = parseFloat(rawQty);
+                                    if (!isNaN(qtyVal)) {
+                                        ingredients.push({
+                                            name: rawIng.trim(),
+                                            qty: qtyVal,
+                                            unit: String(rawUnit || 'kg').toLowerCase().trim(),
+                                            lossPct: 0,
+                                            section: currentSection
+                                        });
+                                    }
+                                }
+                            }
+
+                            if (ingredients.length > 0) {
+                                importedRecipes.push({
+                                    id: Date.now() + Math.random(), 
+                                    name: recipeName,
+                                    line: 'Importadas',
+                                    sections: sectionsMap,
+                                    ingredients: ingredients
+                                });
+                                newRecipesCount++;
+                            }
+                        });
+
+                        if (newRecipesCount === 0) {
+                            showNotification("Nenhuma receita válida encontrada no arquivo.", 'error');
+                            return;
+                        }
+
+                        setRecipes(prev => [...prev, ...importedRecipes]);
+                        showNotification(`${newRecipesCount} receitas importadas com sucesso!`);
+
+                    } catch (error) {
+                        console.error(error);
+                        showNotification("Erro ao processar arquivo. Verifique se é um Excel válido.", 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            const handleViewRecipe = (recipe) => {
+                setViewingRecipe(recipe);
+                setEditingRecipe(null);
+            };
+
+            const handleEditRecipe = (recipe) => {
+                setEditingRecipe(recipe);
+                setViewingRecipe(null);
+            };
+
+            const handleCreateRecipe = () => {
+                setEditingRecipe({name: '', line: lines[0], baseYieldKg: 0, processLossPct: 0, ingredients: [{ name: '', qty: 0, unit: 'kg', lossPct: 0, section: stages[0] }]});
+                setViewingRecipe(null);
+            };
+
+            const handleBackToList = () => {
+                setViewingRecipe(null);
+                setEditingRecipe(null);
+            };
+
+            return (
+                <div className="flex flex-col min-h-screen relative">
+                    {notification && (<div className="fixed top-4 right-4 z-50 toast-enter no-print"><div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-600'}`}><Icon name={notification.type === 'error' ? 'X' : 'CheckCircle'} size={20} /><span className="font-medium">{notification.message}</span></div></div>)}
+
+                    <header className="bg-gray-800 text-white p-4 shadow-lg no-print">
+                        <div className="container mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                {settings.logo ? <img src={settings.logo} className="h-10 w-auto object-contain bg-white rounded p-1" alt="Logo" /> : <Icon name="ChefHat" className="text-primary" size={32} />}
+                                <h1 className="text-xl font-bold tracking-tight">Controle de Rendimentos</h1>
+                            </div>
+                            <nav className="flex gap-4 text-sm font-medium">
+                                <button onClick={() => { setView('dashboard'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'dashboard' ? 'text-primary' : 'text-gray-300'}`}>Painel</button>
+                                <button onClick={() => { setView('production'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'production' ? 'text-primary' : 'text-gray-300'}`}>Produção</button>
+                                <button onClick={() => { setView('monitoring'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'monitoring' ? 'text-primary' : 'text-gray-300'}`}>Monitoramento</button>
+                                <button onClick={() => { setView('recipes'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'recipes' ? 'text-primary' : 'text-gray-300'}`}>Receitas</button>
+                                <button onClick={() => { setView('settings'); handleBackToList(); }} className={`hover:text-blue-300 transition-colors ${view === 'settings' ? 'text-primary' : 'text-gray-300'}`} title="Configurações"><Icon name="Settings" size={18} /></button>
+                            </nav>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 container mx-auto p-4 md:p-6">
+                        {view === 'dashboard' && <Dashboard setView={(v) => { setView(v); handleBackToList(); }} />}
+                        {view === 'production' && <ProductionOrders recipes={recipes} lines={lines} onError={(msg) => showNotification(msg, 'error')} />}
+                        {view === 'monitoring' && <MonitoringView recipes={recipes} logs={logs} onSaveLog={addLog} onUpdateLog={updateLog} onDeleteLog={deleteLog} onError={(msg) => showNotification(msg, 'error')} />}
+                        
+                        {view === 'recipes' && !editingRecipe && !viewingRecipe && (
+                            <RecipeList 
+                                recipes={recipes} 
+                                lines={lines} 
+                                onImport={handleImportExcel} 
+                                onView={handleViewRecipe} 
+                                onCreate={handleCreateRecipe} 
+                            />
+                        )}
+                        
+                        {view === 'recipes' && viewingRecipe && !editingRecipe && (
+                            <RecipeDetails 
+                                recipe={viewingRecipe} 
+                                onEdit={handleEditRecipe} 
+                                onBack={handleBackToList} 
+                                onDelete={deleteRecipe} 
+                            />
+                        )}
+
+                        {view === 'recipes' && editingRecipe && (
+                            <RecipeEditor 
+                                recipe={editingRecipe} 
+                                lines={lines} 
+                                stages={stages} 
+                                onSave={saveRecipe} 
+                                onCancel={handleBackToList} 
+                                onError={(msg) => showNotification(msg, 'error')} 
+                            />
+                        )}
+                        
+                        {view === 'settings' && <SettingsView lines={lines} setLines={setLines} stages={stages} setStages={setStages} settings={settings} setSettings={setSettings} recipes={recipes} setRecipes={setRecipes} logs={logs} setLogs={setLogs} onError={(msg) => showNotification(msg, 'error')} showNotification={showNotification} />}
+                    </main>
+
+                    <footer className="bg-gray-100 p-6 text-center text-gray-500 text-sm border-t border-gray-200 mt-auto no-print">
+                        <p className="italic font-serif text-gray-600 mb-2">"Não se gerencia o que não se mede, não se mede o que não se define, não se define o que não se entende e não há sucesso no que não se gerencia."</p>
+                        <p>© 2025 Sistema de Gestão de Produção</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
