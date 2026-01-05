@@ -91,6 +91,17 @@
             return val;
         };
 
+        // Helper para identificar itens que não compõem peso (embalagens, etiquetas, etc)
+        const isPackaging = (name) => {
+            const n = (name || '').toLowerCase();
+            return n.includes('embalagem') || 
+                   n.includes('etiqueta') || 
+                   n.includes('bobina') || 
+                   n.includes('saco') || 
+                   n.includes('fita') ||
+                   n.includes('caixa');
+        };
+
         const extractColor = (imgSrc) => {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -451,6 +462,33 @@
                 return map;
             }, [recipe]);
 
+            // Cálculo dos totais
+            const totalStats = useMemo(() => {
+                let grandTotalWeight = 0;
+                let grandTotalLoss = 0;
+
+                Object.keys(sections).forEach(sectionName => {
+                    const sectionIngs = sections[sectionName];
+                    const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0 };
+                    
+                    // Soma apenas se NÃO for embalagem
+                    const sectionWeight = sectionIngs.reduce((acc, i) => {
+                        if (isPackaging(i.name)) return acc;
+                        return acc + toKg(i.qty, i.unit);
+                    }, 0);
+
+                    const sectionLoss = sectionWeight * (sectionConfig.processLossPct / 100);
+                    
+                    grandTotalWeight += sectionWeight;
+                    grandTotalLoss += sectionLoss;
+                });
+
+                const finalWeight = grandTotalWeight - grandTotalLoss;
+                const totalLossPct = grandTotalWeight > 0 ? (grandTotalLoss / grandTotalWeight) * 100 : 0;
+
+                return { finalWeight, totalLossPct };
+            }, [sections, recipe.sections]);
+
             return (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-fade-in">
                     <div className="bg-orange-50 p-6 border-b border-orange-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -480,7 +518,12 @@
                         {Object.keys(sections).map(sectionName => {
                             const sectionIngs = sections[sectionName];
                             const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0, tolerancePct: 10 };
-                            const totalWeight = sectionIngs.reduce((acc, i) => acc + toKg(i.qty, i.unit), 0);
+                            
+                            // Soma peso da seção ignorando embalagens
+                            const totalWeight = sectionIngs.reduce((acc, i) => {
+                                if (isPackaging(i.name)) return acc;
+                                return acc + toKg(i.qty, i.unit);
+                            }, 0);
                             
                             return (
                                 <div key={sectionName} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -504,10 +547,13 @@
                                     <div className="divide-y divide-gray-100">
                                         {sectionIngs.map((ing, idx) => (
                                             <div key={idx} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors">
-                                                <div className="font-medium text-gray-700">{ing.name}</div>
+                                                <div className="font-medium text-gray-700 flex flex-col">
+                                                    <span>{ing.name}</span>
+                                                    {isPackaging(ing.name) && <span className="text-[10px] text-gray-400 uppercase tracking-wide">Item de Embalagem (Não pesa)</span>}
+                                                </div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
-                                                        <span className="font-bold text-gray-800">{parseFloat(ing.qty).toFixed(3)}</span> <span className="text-xs text-gray-500">{ing.unit}</span>
+                                                        <span className={`font-bold ${isPackaging(ing.name) ? 'text-gray-400' : 'text-gray-800'}`}>{parseFloat(ing.qty).toFixed(3)}</span> <span className="text-xs text-gray-500">{ing.unit}</span>
                                                     </div>
                                                     {ing.lossPct > 0 && (
                                                         <div className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 font-medium">
@@ -526,8 +572,40 @@
                             );
                         })}
 
-                        <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-600">
-                            <Icon name="Info" className="text-primary mt-0.5" />
+                        {/* Novo Bloco de Totais Gerais */}
+                        <div className="mt-8 border-t-2 border-gray-100 pt-6">
+                            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <Icon name="BarChart3" className="text-primary" /> 
+                                    Resumo Final do Processo
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm text-gray-500 font-medium">Peso Final Estimado</p>
+                                            <p className="text-xs text-gray-400">Produto Acabado</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-2xl font-bold text-emerald-600">{totalStats.finalWeight.toFixed(3)}</span>
+                                            <span className="text-sm text-gray-500 ml-1">kg</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm text-gray-500 font-medium">Perda Total do Processo</p>
+                                            <p className="text-xs text-gray-400">Quebra Acumulada</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-2xl font-bold text-red-500">{totalStats.totalLossPct.toFixed(2)}</span>
+                                            <span className="text-sm text-gray-500 ml-1">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
+                            <Icon name="Info" className="text-blue-500 mt-0.5" />
                             <p>Esta é a ficha técnica oficial. Utilize a aba "Produção" para gerar ordens de serviço escalonadas ou "Monitoramento" para lançar dados reais de chão de fábrica.</p>
                         </div>
                     </div>
@@ -746,7 +824,13 @@
                 Object.keys(ingredientsBySection).forEach(secName => {
                     const sectionIngs = ingredientsBySection[secName];
                     const sectionLossPct = selectedRecipe.sections?.[secName]?.processLossPct || 0;
-                    const sectionBaseWeightKg = sectionIngs.reduce((acc, curr) => acc + toKg(curr.qty, curr.unit), 0);
+                    
+                    // Calcula peso base ignorando embalagens
+                    const sectionBaseWeightKg = sectionIngs.reduce((acc, curr) => {
+                        if (isPackaging(curr.name)) return acc;
+                        return acc + toKg(curr.qty, curr.unit);
+                    }, 0);
+
                     const sectionYieldKg = sectionBaseWeightKg * (1 - (sectionLossPct / 100));
 
                     sectionsData[secName] = {
@@ -782,6 +866,7 @@
                         }
                     } else if (type === 'ING') {
                         const ing = selectedRecipe.ingredients.find(i => i.name === name && (i.section || 'Geral') === (sec || 'Geral'));
+                        // Se basear cálculo num item de embalagem, usa a quantidade nominal, já que ele não tem "peso" na receita
                         if (ing) baseQty = toKg(ing.qty, ing.unit);
                     }
 
@@ -802,16 +887,26 @@
                         const weightInKg = toKg(ing.qty, ing.unit);
                         const totalReqKg = weightInKg * factor;
                         const cleanLossPct = parseFloat(ing.lossPct) || 0;
-                        const grossReqKg = cleanLossPct >= 100 ? 0 : totalReqKg / (1 - (cleanLossPct/100));
+                        
+                        // Itens de embalagem não sofrem perda de processo (quebra técnica) no cálculo de necessidade bruta
+                        // Apenas itens comestíveis sofrem perda
+                        const isPack = isPackaging(ing.name);
+                        const grossReqKg = (cleanLossPct >= 100 || isPack) ? totalReqKg : totalReqKg / (1 - (cleanLossPct/100));
                         
                         return {
                             ...ing,
                             calcNet: totalReqOriginalUnit,
-                            calcGrossKg: grossReqKg
+                            calcGrossKg: grossReqKg,
+                            isPackaging: isPack
                         };
                     });
 
-                    const sectionTotalGrossKg = scaledIngs.reduce((sum, i) => sum + i.calcGrossKg, 0);
+                    // Soma apenas itens não-embalagem para o peso da seção
+                    const sectionTotalGrossKg = scaledIngs.reduce((sum, i) => {
+                        if (i.isPackaging) return sum;
+                        return sum + i.calcGrossKg;
+                    }, 0);
+
                     const sectionFinalWeightKg = data.yieldKg * factor;
                     grandTotalGrossKg += sectionTotalGrossKg;
 
