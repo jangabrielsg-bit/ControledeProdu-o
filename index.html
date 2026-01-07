@@ -472,10 +472,11 @@
                 Object.keys(sections).forEach(sectionName => {
                     const sectionIngs = sections[sectionName];
                     const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0 };
+                    const isPkgStage = sectionName.toLowerCase().includes('embalagem');
                     
-                    // Soma apenas se NÃO for embalagem
+                    // Soma apenas se NÃO for embalagem (Item ou Etapa inteira)
                     const sectionWeight = sectionIngs.reduce((acc, i) => {
-                        if (isPackaging(i.name)) return acc;
+                        if (isPkgStage || isPackaging(i.name)) return acc;
                         return acc + toKg(i.qty, i.unit);
                     }, 0);
 
@@ -520,10 +521,11 @@
                         {Object.keys(sections).map(sectionName => {
                             const sectionIngs = sections[sectionName];
                             const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0, tolerancePct: 10 };
+                            const isPkgStage = sectionName.toLowerCase().includes('embalagem');
                             
-                            // Soma peso da seção ignorando embalagens
+                            // Soma peso da seção ignorando embalagens (Item ou Etapa inteira)
                             const totalWeight = sectionIngs.reduce((acc, i) => {
-                                if (isPackaging(i.name)) return acc;
+                                if (isPkgStage || isPackaging(i.name)) return acc;
                                 return acc + toKg(i.qty, i.unit);
                             }, 0);
                             
@@ -532,7 +534,7 @@
                                     <div className="bg-orange-50 px-4 py-3 border-b border-orange-100 flex justify-between items-center">
                                         <h3 className="font-bold text-gray-700 flex items-center gap-2">
                                             <div className="w-2 h-6 bg-primary rounded-full"></div>
-                                            {sectionName}
+                                            {sectionName} {isPkgStage && <span className="text-[10px] bg-white border border-orange-200 px-2 rounded-full text-orange-400 font-normal">Não conta no peso</span>}
                                         </h3>
                                         <div className="flex gap-4 text-xs">
                                             <div className="flex flex-col items-end">
@@ -551,11 +553,11 @@
                                             <div key={idx} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                                 <div className="font-medium text-gray-700 flex flex-col">
                                                     <span>{ing.name}</span>
-                                                    {isPackaging(ing.name) && <span className="text-[10px] text-gray-400 uppercase tracking-wide">Item de Embalagem (Não pesa)</span>}
+                                                    {(isPkgStage || isPackaging(ing.name)) && <span className="text-[10px] text-gray-400 uppercase tracking-wide">Item de Embalagem (Não pesa)</span>}
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
-                                                        <span className={`font-bold ${isPackaging(ing.name) ? 'text-gray-400' : 'text-gray-800'}`}>{parseFloat(ing.qty).toFixed(3)}</span> <span className="text-xs text-gray-500">{ing.unit}</span>
+                                                        <span className={`font-bold ${(isPkgStage || isPackaging(ing.name)) ? 'text-gray-400' : 'text-gray-800'}`}>{parseFloat(ing.qty).toFixed(3)}</span> <span className="text-xs text-gray-500">{ing.unit}</span>
                                                     </div>
                                                     {ing.lossPct > 0 && (
                                                         <div className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 font-medium">
@@ -826,10 +828,11 @@
                 Object.keys(ingredientsBySection).forEach(secName => {
                     const sectionIngs = ingredientsBySection[secName];
                     const sectionLossPct = selectedRecipe.sections?.[secName]?.processLossPct || 0;
+                    const isPkgStage = secName.toLowerCase().includes('embalagem');
                     
-                    // Calcula peso base ignorando embalagens
+                    // Calcula peso base ignorando embalagens (Item ou Etapa inteira)
                     const sectionBaseWeightKg = sectionIngs.reduce((acc, curr) => {
-                        if (isPackaging(curr.name)) return acc;
+                        if (isPkgStage || isPackaging(curr.name)) return acc;
                         return acc + toKg(curr.qty, curr.unit);
                     }, 0);
 
@@ -884,6 +887,8 @@
 
                 Object.keys(sectionsData).forEach(secName => {
                     const data = sectionsData[secName];
+                    const isPkgStage = secName.toLowerCase().includes('embalagem');
+
                     const scaledIngs = data.ingredients.map(ing => {
                         const totalReqOriginalUnit = ing.qty * factor;
                         const weightInKg = toKg(ing.qty, ing.unit);
@@ -892,7 +897,8 @@
                         
                         // Itens de embalagem não sofrem perda de processo (quebra técnica) no cálculo de necessidade bruta
                         // Apenas itens comestíveis sofrem perda
-                        const isPack = isPackaging(ing.name);
+                        // Se a etapa inteira for embalagem, tudo conta como embalagem
+                        const isPack = isPkgStage || isPackaging(ing.name);
                         const grossReqKg = (cleanLossPct >= 100 || isPack) ? totalReqKg : totalReqKg / (1 - (cleanLossPct/100));
                         
                         return {
