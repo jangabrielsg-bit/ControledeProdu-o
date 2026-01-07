@@ -225,7 +225,8 @@
                                         <li 
                                             key={idx} 
                                             onClick={() => handleSelect(opt)}
-                                            className={`p-2 text-sm cursor-pointer hover:bg-gray-50 ${val === value ? 'bg-gray-100 text-primary font-medium' : 'text-gray-700'}`}
+                                            // Adicionado 'break-words' para textos longos não cortarem
+                                            className={`p-2 text-sm cursor-pointer hover:bg-gray-50 break-words ${val === value ? 'bg-gray-100 text-primary font-medium' : 'text-gray-700'}`}
                                         >
                                             {String(label)}
                                         </li>
@@ -942,7 +943,8 @@
             }, []);
 
             return (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                // REMOVIDO: overflow-hidden que estava cortando a lista suspensa
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div className="p-6 border-b border-gray-100 no-print">
                         <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                             <Icon name="ClipboardList" className="text-primary" />
@@ -1162,6 +1164,45 @@
             const handleEdit = (log) => { setSelectedRecipeId(log.recipeId); setSelectedStage(log.stage); setMeasuredWeightKg(log.outputKg); setNumBatches(log.batches || 1); setEditingId(log.id); setRecordDate(log.date.slice(0, 16)); };
             const handleCancelEdit = () => { setEditingId(null); setMeasuredWeightKg(''); setNumBatches('1'); setRecordDate(new Date().toISOString().slice(0, 16)); };
             const handleDelete = (id) => { if (confirm("Tem certeza que deseja excluir este registro?")) onDeleteLog(id); };
+            
+            // --- NOVO: Função para baixar o modelo da planilha (Layout Atualizado) ---
+            const handleDownloadTemplate = () => {
+                if (typeof XLSX === 'undefined') {
+                    alert("Biblioteca Excel ainda carregando. Tente em 2 segundos.");
+                    return;
+                }
+                
+                // Estrutura exata baseada no modelo enviado (com recuo na coluna A e cabeçalhos na linha 2)
+                const data = [
+                    [], // Linha 1: Vazia
+                    ["", "CONTROLE DE QUALIDADE", "", "ACOMPANHAMENTO DE RENDIMENTOS"], // Linha 2: Títulos Superiores
+                    [], // Linha 3: Vazia
+                    [], // Linha 4: Vazia
+                    // Linha 5: Cabeçalhos das Colunas (Começando da Coluna B)
+                    ["", "Data", "Hora", "Nome da Receita / Produto", "Etapa (Ex: Massa, Recheio)", "Nº de Receitas (Bateladas)", "Peso Final Obtido (kg)", "Responsável", "Observações (Lote/Problemas)"],
+                    // Exemplo 1 para orientação
+                    ["", new Date().toLocaleDateString(), "08:00", "Pão Francês", "Massa", 1, 41.5, "João", "Massa um pouco mole"],
+                    // Exemplo 2 para orientação
+                    ["", new Date().toLocaleDateString(), "09:30", "Bolo Cenoura", "Cobertura", 2, 12.2, "Maria", "OK"]
+                ];
+                
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                
+                // Ajuste de largura das colunas (WCH = width char count)
+                // A=5, B=12, C=10, D=30, E=25, F=15, G=20, H=15, I=30
+                ws['!cols'] = [ {wch:5}, {wch:12}, {wch:10}, {wch:30}, {wch:25}, {wch:15}, {wch:20}, {wch:15}, {wch:30} ];
+
+                // Mesclar células do cabeçalho superior para ficar igual ao modelo
+                // s = start (início), e = end (fim), r = row (linha 0-index), c = col (coluna 0-index)
+                if(!ws['!merges']) ws['!merges'] = [];
+                ws['!merges'].push({ s: { r: 1, c: 1 }, e: { r: 1, c: 2 } }); // Mescla "CONTROLE DE QUALIDADE" (B2:C2)
+                ws['!merges'].push({ s: { r: 1, c: 3 }, e: { r: 1, c: 5 } }); // Mescla "ACOMPANHAMENTO..." (D2:F2)
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Diário de Produção");
+                XLSX.writeFile(wb, "Modelo_Coleta_Dados_Producao.xlsx");
+            };
+            // ----------------------------------------------------
 
             const chartData = useMemo(() => {
                 let filtered = logs.filter(l => l.recipeId == selectedRecipeId && l.stage === selectedStage);
@@ -1199,7 +1240,15 @@
             return (
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Icon name="Activity" className="text-primary" /> Monitoramento de Etapas (CEP)</h2></div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <Icon name="Activity" className="text-primary" /> Monitoramento de Etapas (CEP)
+                            </h2>
+                            {/* --- Botão Novo para Baixar Modelo --- */}
+                            <button onClick={handleDownloadTemplate} className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors font-medium text-xs">
+                                <Icon name="Download" size={14} /> Baixar Modelo de Coleta
+                            </button>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Receita</label><div className="w-full"><SearchableSelect options={recipes.map(r => ({label: r.name, value: r.id}))} value={selectedRecipeId} onChange={(val) => { setSelectedRecipeId(val); setSelectedStage(''); }} placeholder="Buscar Receita" disabled={!!editingId} /></div></div>
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Etapa para Verificar</label><div className="w-full"><SearchableSelect options={availableStages.map(s => ({label: s, value: s}))} value={selectedStage} onChange={setSelectedStage} placeholder="Selecione a Etapa" disabled={!selectedRecipeId || !!editingId} /></div></div>
