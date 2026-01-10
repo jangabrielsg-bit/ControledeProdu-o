@@ -91,6 +91,7 @@
             return val;
         };
 
+        // Helper para identificar itens que não compõem peso (embalagens, etiquetas, etc)
         const isPackaging = (name) => {
             const n = (name || '').toLowerCase();
             return n.includes('embalagem') || 
@@ -535,10 +536,18 @@
                 let targetTotalWeight = 0;
 
                 baseSections.forEach(s => {
-                    sections[s].forEach(i => { if (!isPackaging(i.name)) baseTotalWeight += toKg(i.qty, i.unit); });
+                    let sectionGross = 0;
+                    sections[s].forEach(i => { if (!isPackaging(i.name)) sectionGross += toKg(i.qty, i.unit); });
+                    // Aplica perda
+                    const loss = recipe.sections?.[s]?.processLossPct || 0;
+                    baseTotalWeight += sectionGross * (1 - (loss / 100));
                 });
                 targetSections.forEach(s => {
-                    sections[s].forEach(i => { if (!isPackaging(i.name)) targetTotalWeight += toKg(i.qty, i.unit); });
+                    let sectionGross = 0;
+                    sections[s].forEach(i => { if (!isPackaging(i.name)) sectionGross += toKg(i.qty, i.unit); });
+                    // Aplica perda
+                    const loss = recipe.sections?.[s]?.processLossPct || 0;
+                    targetTotalWeight += sectionGross * (1 - (loss / 100));
                 });
 
                 const totalPartWeight = baseTotalWeight + targetTotalWeight;
@@ -628,7 +637,7 @@
                                 <div className="flex flex-col md:flex-row gap-6">
                                     <div className="flex-1">
                                         <div className="flex justify-between text-xs mb-1">
-                                            <span className="text-gray-500">Distribuição Atual</span>
+                                            <span className="text-gray-500">Distribuição Atual (Considerando Perdas)</span>
                                             <span className="font-bold text-gray-700">Meta {balanceData.targetStage}: {recipe.targetFillingPct}%</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden flex">
@@ -653,7 +662,7 @@
                                                     {balanceData.analysis.diff > 0 ? `Excesso de ${balanceData.targetStage}` : `Falta ${balanceData.targetStage}`}
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    Para {balanceData.baseTotalWeight.toFixed(2)}kg de {balanceData.baseStage}, você tem 
+                                                    Para {balanceData.baseTotalWeight.toFixed(2)}kg de {balanceData.baseStage} (líquido), você tem 
                                                     <strong className={balanceData.analysis.diff > 0 ? 'text-red-600' : 'text-blue-600'}> {Math.abs(balanceData.analysis.diff).toFixed(3)} kg </strong>
                                                     {balanceData.analysis.diff > 0 ? 'sobrando.' : 'faltando.'}
                                                 </p>
@@ -991,7 +1000,7 @@
                                     </select>
                                 </div>
                                 {(form.outputType === 'unit' || form.outputType === 'package') && (
-                                    <React.Fragment>
+                                    <>
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 mb-1">
                                                 {form.outputType === 'unit' ? 'Peso Médio Unitário' : 'Peso Líquido do Pacote'}
@@ -1017,7 +1026,7 @@
                                                 <option value="kg">Quilos (kg)</option>
                                             </select>
                                         </div>
-                                    </React.Fragment>
+                                    </>
                                 )}
                             </div>
                         </div>
