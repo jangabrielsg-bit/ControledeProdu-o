@@ -867,11 +867,12 @@
 
                     if (type === 'SECTION') {
                         if (sectionsData[name]) {
-                            baseQty = sectionsData[name].baseWeightKg;
+                            // CORREÇÃO: Usar o peso líquido (yieldKg) como base, pois o usuário informa o que sobrou (pronto)
+                            baseQty = sectionsData[name].yieldKg;
                         }
                     } else if (type === 'ING') {
                         const ing = selectedRecipe.ingredients.find(i => i.name === name && (i.section || 'Geral') === (sec || 'Geral'));
-                        // Se basear cálculo num item de embalagem, usa a quantidade nominal, já que ele não tem "peso" na receita
+                        // Se basear cálculo num item de embalagem, usa a quantidade nominal
                         if (ing) baseQty = toKg(ing.qty, ing.unit);
                     }
 
@@ -895,9 +896,7 @@
                         const totalReqKg = weightInKg * factor;
                         const cleanLossPct = parseFloat(ing.lossPct) || 0;
                         
-                        // Itens de embalagem não sofrem perda de processo (quebra técnica) no cálculo de necessidade bruta
-                        // Apenas itens comestíveis sofrem perda
-                        // Se a etapa inteira for embalagem, tudo conta como embalagem
+                        // Itens de embalagem não sofrem perda de processo
                         const isPack = isPkgStage || isPackaging(ing.name);
                         const grossReqKg = (cleanLossPct >= 100 || isPack) ? totalReqKg : totalReqKg / (1 - (cleanLossPct/100));
                         
