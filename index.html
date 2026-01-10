@@ -91,7 +91,6 @@
             return val;
         };
 
-        // Helper para identificar itens que não compõem peso (embalagens, etiquetas, etc)
         const isPackaging = (name) => {
             const n = (name || '').toLowerCase();
             return n.includes('embalagem') || 
@@ -264,8 +263,11 @@
                     { id: 4, name: "Fermento Biológico", qty: 800, unit: "g", lossPct: 0, section: "Massa", fixedQty: 0 },
                     { id: 5, name: "Melhorador", qty: 250, unit: "g", lossPct: 0, section: "Massa", fixedQty: 0 }
                 ],
-                outputType: 'kg', // 'kg', 'unit', 'package'
-                outputUnitWeight: 0
+                outputType: 'kg', 
+                outputUnitWeight: 0,
+                targetFillingPct: 0,
+                balanceBase: 'Massa',
+                balanceTarget: 'Recheio'
             }
         ];
 
@@ -520,6 +522,55 @@
                 return null;
             }, [totalStats.finalWeight, recipe]);
 
+            // --- NOVO: Lógica de Balanceamento (Etapa A vs Etapa B) ---
+            const balanceData = useMemo(() => {
+                const baseStage = recipe.balanceBase || 'Massa';
+                const targetStage = recipe.balanceTarget || 'Recheio';
+
+                // Filtra seções pelo nome exato selecionado
+                const baseSections = Object.keys(sections).filter(s => s === baseStage);
+                const targetSections = Object.keys(sections).filter(s => s === targetStage);
+
+                let baseTotalWeight = 0;
+                let targetTotalWeight = 0;
+
+                baseSections.forEach(s => {
+                    sections[s].forEach(i => { if (!isPackaging(i.name)) baseTotalWeight += toKg(i.qty, i.unit); });
+                });
+                targetSections.forEach(s => {
+                    sections[s].forEach(i => { if (!isPackaging(i.name)) targetTotalWeight += toKg(i.qty, i.unit); });
+                });
+
+                const totalPartWeight = baseTotalWeight + targetTotalWeight;
+                const currentTargetPct = totalPartWeight > 0 ? (targetTotalWeight / totalPartWeight) * 100 : 0;
+                const currentBasePct = totalPartWeight > 0 ? (baseTotalWeight / totalPartWeight) * 100 : 0;
+
+                let analysis = null;
+                const targetFilling = recipe.targetFillingPct || 0;
+                
+                if (targetFilling > 0 && totalPartWeight > 0) {
+                    const targetBasePct = 100 - targetFilling;
+                    const idealTargetWeight = (baseTotalWeight * targetFilling) / targetBasePct;
+                    const diff = targetTotalWeight - idealTargetWeight; 
+
+                    analysis = {
+                        idealTargetWeight,
+                        diff,
+                        status: Math.abs(diff) < 0.05 ? 'ok' : (diff > 0 ? 'excess' : 'lack')
+                    };
+                }
+
+                return { 
+                    baseTotalWeight, 
+                    targetTotalWeight, 
+                    currentBasePct, 
+                    currentTargetPct, 
+                    analysis,
+                    baseStage,
+                    targetStage
+                };
+            }, [sections, recipe]);
+
             return (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-fade-in">
                     <div className="bg-orange-50 p-6 border-b border-orange-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -535,6 +586,26 @@
                                 <span className="text-gray-400 text-sm">• {recipe.ingredients.length} Ingredientes</span>
                                 {recipe.lastUpdated && <span className="text-xs text-gray-400 ml-2">• Atualizado em {formatDate(recipe.lastUpdated)}</span>}
                             </div>
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                {recipe.outputType === 'unit' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <Icon name="Box" size={12} />
+                                        Vendido por Unidade ({recipe.outputUnitWeight} {recipe.outputUnitMeasure})
+                                    </span>
+                                )}
+                                {recipe.outputType === 'package' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        <Icon name="Box" size={12} />
+                                        Vendido por Pacote ({recipe.outputUnitWeight} {recipe.outputUnitMeasure})
+                                    </span>
+                                )}
+                                {(!recipe.outputType || recipe.outputType === 'kg') && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <Icon name="Scale" size={12} />
+                                        Vendido a Granel (Kg)
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="flex gap-2">
                             <button onClick={() => onDelete(recipe.id)} className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 flex items-center gap-2">
@@ -547,6 +618,52 @@
                     </div>
 
                     <div className="p-6 space-y-8">
+                        {/* --- NOVO: Card de Balanceamento Flexível --- */}
+                        {balanceData.analysis && balanceData.baseTotalWeight > 0 && (
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                    <Icon name="Scale" size={16} className="text-primary" />
+                                    Balanceamento ({balanceData.baseStage} vs {balanceData.targetStage})
+                                </h3>
+                                <div className="flex flex-col md:flex-row gap-6">
+                                    <div className="flex-1">
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-gray-500">Distribuição Atual</span>
+                                            <span className="font-bold text-gray-700">Meta {balanceData.targetStage}: {recipe.targetFillingPct}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden flex">
+                                            <div className="bg-orange-400 h-full flex items-center justify-center text-[9px] text-white font-bold" style={{ width: `${balanceData.currentBasePct}%` }}>
+                                                {balanceData.baseStage} {balanceData.currentBasePct.toFixed(1)}%
+                                            </div>
+                                            <div className="bg-red-400 h-full flex items-center justify-center text-[9px] text-white font-bold" style={{ width: `${balanceData.currentTargetPct}%` }}>
+                                                {balanceData.targetStage} {balanceData.currentTargetPct.toFixed(1)}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 border-l border-gray-100 pl-6 flex flex-col justify-center">
+                                        {balanceData.analysis.status === 'ok' ? (
+                                            <div className="text-emerald-600 font-bold text-sm flex items-center gap-2">
+                                                <Icon name="CheckCircle" size={16} /> Proporção Ideal!
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <div className={`text-sm font-bold flex items-center gap-2 ${balanceData.analysis.diff > 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                                                    <Icon name="AlertTriangle" size={16} />
+                                                    {balanceData.analysis.diff > 0 ? `Excesso de ${balanceData.targetStage}` : `Falta ${balanceData.targetStage}`}
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Para {balanceData.baseTotalWeight.toFixed(2)}kg de {balanceData.baseStage}, você tem 
+                                                    <strong className={balanceData.analysis.diff > 0 ? 'text-red-600' : 'text-blue-600'}> {Math.abs(balanceData.analysis.diff).toFixed(3)} kg </strong>
+                                                    {balanceData.analysis.diff > 0 ? 'sobrando.' : 'faltando.'}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {Object.keys(sections).map(sectionName => {
                             const sectionIngs = sections[sectionName];
                             const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0, tolerancePct: 10 };
@@ -874,7 +991,7 @@
                                     </select>
                                 </div>
                                 {(form.outputType === 'unit' || form.outputType === 'package') && (
-                                    <>
+                                    <React.Fragment>
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 mb-1">
                                                 {form.outputType === 'unit' ? 'Peso Médio Unitário' : 'Peso Líquido do Pacote'}
@@ -900,8 +1017,51 @@
                                                 <option value="kg">Quilos (kg)</option>
                                             </select>
                                         </div>
-                                    </>
+                                    </React.Fragment>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* --- NOVO: Estratégia de Balanceamento --- */}
+                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
+                            <h3 className="text-sm font-bold text-orange-800 mb-2 flex items-center gap-2">
+                                <Icon name="Scale" size={16} /> Estratégia de Balanceamento
+                            </h3>
+                            <p className="text-xs text-orange-600 mb-3">Defina qual relação entre etapas deve ser monitorada (ex: Massa vs Recheio).</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Etapa Base (Ex: Massa)</label>
+                                    <select 
+                                        value={form.balanceBase || activeSections[0] || ''} 
+                                        onChange={e => updateField('balanceBase', e.target.value)}
+                                        className="w-full p-2 border border-orange-200 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                                    >
+                                        {activeSections.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Etapa Alvo (Ex: Recheio)</label>
+                                    <select 
+                                        value={form.balanceTarget || activeSections[1] || ''} 
+                                        onChange={e => updateField('balanceTarget', e.target.value)}
+                                        className="w-full p-2 border border-orange-200 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                                    >
+                                        {activeSections.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Meta da Etapa Alvo (%)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="number" step="0.1" onWheel={(e) => e.target.blur()}
+                                            value={form.targetFillingPct || ''} 
+                                            onChange={e => updateField('targetFillingPct', parseFloat(e.target.value))}
+                                            className="w-full p-2 border border-orange-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                                            placeholder="Ex: 30"
+                                        />
+                                        <span className="text-sm text-gray-500 font-bold">%</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1068,27 +1228,15 @@
                     const isPkgStage = secName.toLowerCase().includes('embalagem');
 
                     const scaledIngs = data.ingredients.map(ing => {
-                        // 1. Cálculo Variável (proporcional aos lotes)
-                        const variableQty = ing.qty * factor;
-                        
-                        // 2. Cálculo Fixo (Startup) - Adicionado UMA VEZ
-                        const fixedQty = parseFloat(ing.fixedQty || 0);
-                        
-                        // Soma total na unidade original para exibição
-                        const totalReqOriginalUnit = variableQty + fixedQty;
-
-                        // Conversões para KG para totais
-                        const variableKg = toKg(ing.qty, ing.unit) * factor;
-                        const fixedKg = toKg(fixedQty, ing.unit); // Setup em KG
-                        
-                        const totalReqKg = variableKg + fixedKg;
-                        
+                        const totalReqOriginalUnit = ing.qty * factor;
+                        const weightInKg = toKg(ing.qty, ing.unit);
+                        const totalReqKg = weightInKg * factor;
                         const cleanLossPct = parseFloat(ing.lossPct) || 0;
                         
-                        // Itens de embalagem não sofrem perda de processo
+                        // Itens de embalagem não sofrem perda de processo (quebra técnica) no cálculo de necessidade bruta
+                        // Apenas itens comestíveis sofrem perda
+                        // Se a etapa inteira for embalagem, tudo conta como embalagem
                         const isPack = isPkgStage || isPackaging(ing.name);
-                        
-                        // A perda se aplica ao total necessário (Variável + Fixo) pois o fixo também passa pelo processo
                         const grossReqKg = (cleanLossPct >= 100 || isPack) ? totalReqKg : totalReqKg / (1 - (cleanLossPct/100));
                         
                         return {
@@ -1221,7 +1369,7 @@
                                                 mode === 'target' ? 'Quantidade Final Desejada (Kg)' :
                                                 'Quantidade que você tem (Kg)'}
                                             </label>
-                                            <input type="number" min="0" step="0.0001" onWheel={(e) => e.target.blur()} value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-lg font-bold text-gray-800" />
+                                            <input type="number" min="0" step="0.01" placeholder="0.00" onWheel={(e) => e.target.blur()} value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-lg font-bold text-gray-800" />
                                         </div>
                                     </div>
                                 </div>
@@ -1257,10 +1405,7 @@
                                     <p className="text-2xl font-bold text-orange-700">{calculation.targetBatches.toFixed(3)}</p>
                                 </div>
 
-                                <div className="text-right">
-                                    <p className="text-sm text-emerald-600 font-medium">Produto Final Estimado</p>
-                                    <p className="text-3xl font-bold text-emerald-600">{calculation.finalProductWeightKg.toFixed(3)} <span className="text-lg">kg</span></p>
-                                </div>
+                                <div className="text-right"><p className="text-sm text-emerald-600 font-medium">Produto Final Estimado</p><p className="text-3xl font-bold text-emerald-600">{calculation.finalProductWeightKg.toFixed(3)} <span className="text-lg">kg</span></p></div>
 
                                 {/* NOVO: Exibição de Rendimento em Unidades/Pacotes */}
                                 {calculation.finalUnitCount > 0 && (
@@ -1350,216 +1495,6 @@
             );
         };
 
-        const MonitoringView = ({ recipes, logs, onSaveLog, onError, onUpdateLog, onDeleteLog }) => {
-            const [selectedRecipeId, setSelectedRecipeId] = useState('');
-            const [selectedStage, setSelectedStage] = useState('');
-            const [measuredWeightKg, setMeasuredWeightKg] = useState('');
-            const [numBatches, setNumBatches] = useState('1'); 
-            const [editingId, setEditingId] = useState(null);
-            const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 16));
-            const [startDate, setStartDate] = useState('');
-            const [endDate, setEndDate] = useState('');
-
-            const selectedRecipe = useMemo(() => recipes.find(r => r.id == selectedRecipeId), [recipes, selectedRecipeId]);
-            const availableStages = useMemo(() => { if (!selectedRecipe) return []; return Object.keys(selectedRecipe.sections || {}); }, [selectedRecipe]);
-
-            const targetLossPct = selectedRecipe?.sections?.[selectedStage]?.processLossPct || 0;
-            const targetYieldPct = 100 - targetLossPct;
-            const targetTolerance = selectedRecipe?.sections?.[selectedStage]?.tolerancePct || 10;
-
-            const handleRegister = (e) => {
-                e.preventDefault();
-                if (!selectedRecipeId || !selectedStage || !measuredWeightKg || !numBatches || !recordDate) { onError("Preencha todos os campos."); return; }
-                const batches = parseFloat(numBatches);
-                const output = parseFloat(measuredWeightKg);
-                if (batches <= 0) { onError("Número de receitas inválido."); return; }
-
-                const sectionIngs = selectedRecipe.ingredients.filter(i => (i.section || 'Massa') === selectedStage);
-                const baseWeightPerBatch = sectionIngs.reduce((acc, curr) => acc + toKg(curr.qty, curr.unit), 0);
-                const theoreticalInput = baseWeightPerBatch * batches;
-                if (theoreticalInput <= 0) { onError("Erro: Receita sem peso base nesta etapa."); return; }
-
-                const actualYieldPct = (output / theoreticalInput) * 100;
-
-                const logEntry = {
-                    id: editingId || Date.now(),
-                    date: recordDate,
-                    recipeId: selectedRecipeId,
-                    recipeName: selectedRecipe.name,
-                    stage: selectedStage,
-                    batches: batches,
-                    outputKg: output,
-                    yieldPct: actualYieldPct,
-                    targetYieldPct: targetYieldPct
-                };
-
-                if (editingId) { onUpdateLog(logEntry); setEditingId(null); } else { onSaveLog(logEntry); }
-                setMeasuredWeightKg(''); setNumBatches('1'); setRecordDate(new Date().toISOString().slice(0, 16));
-            };
-
-            const handleEdit = (log) => { setSelectedRecipeId(log.recipeId); setSelectedStage(log.stage); setMeasuredWeightKg(log.outputKg); setNumBatches(log.batches || 1); setEditingId(log.id); setRecordDate(log.date.slice(0, 16)); };
-            const handleCancelEdit = () => { setEditingId(null); setMeasuredWeightKg(''); setNumBatches('1'); setRecordDate(new Date().toISOString().slice(0, 16)); };
-            const handleDelete = (id) => { if (confirm("Tem certeza que deseja excluir este registro?")) onDeleteLog(id); };
-            
-            // --- NOVO: Função para baixar o modelo da planilha (Layout Atualizado) ---
-            const handleDownloadTemplate = () => {
-                if (typeof XLSX === 'undefined') {
-                    alert("Biblioteca Excel ainda carregando. Tente em 2 segundos.");
-                    return;
-                }
-                
-                // Estrutura exata baseada no modelo enviado (com recuo na coluna A e cabeçalhos na linha 2)
-                const data = [
-                    [], // Linha 1: Vazia
-                    ["", "CONTROLE DE QUALIDADE", "", "ACOMPANHAMENTO DE RENDIMENTOS"], // Linha 2: Títulos Superiores
-                    [], // Linha 3: Vazia
-                    [], // Linha 4: Vazia
-                    // Linha 5: Cabeçalhos das Colunas (Começando da Coluna B)
-                    ["", "Data", "Hora", "Nome da Receita / Produto", "Etapa (Ex: Massa, Recheio)", "Nº de Receitas (Bateladas)", "Peso Final Obtido (kg)", "Responsável", "Observações (Lote/Problemas)"],
-                    // Exemplo 1 para orientação
-                    ["", new Date().toLocaleDateString(), "08:00", "Pão Francês", "Massa", 1, 41.5, "João", "Massa um pouco mole"],
-                    // Exemplo 2 para orientação
-                    ["", new Date().toLocaleDateString(), "09:30", "Bolo Cenoura", "Cobertura", 2, 12.2, "Maria", "OK"]
-                ];
-                
-                const ws = XLSX.utils.aoa_to_sheet(data);
-                
-                // Ajuste de largura das colunas (WCH = width char count)
-                // A=5, B=12, C=10, D=30, E=25, F=15, G=20, H=15, I=30
-                ws['!cols'] = [ {wch:5}, {wch:12}, {wch:10}, {wch:30}, {wch:25}, {wch:15}, {wch:20}, {wch:15}, {wch:30} ];
-
-                // Mesclar células do cabeçalho superior para ficar igual ao modelo
-                // s = start (início), e = end (fim), r = row (linha 0-index), c = col (coluna 0-index)
-                if(!ws['!merges']) ws['!merges'] = [];
-                ws['!merges'].push({ s: { r: 1, c: 1 }, e: { r: 1, c: 2 } }); // Mescla "CONTROLE DE QUALIDADE" (B2:C2)
-                ws['!merges'].push({ s: { r: 1, c: 3 }, e: { r: 1, c: 5 } }); // Mescla "ACOMPANHAMENTO..." (D2:F2)
-
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Diário de Produção");
-                XLSX.writeFile(wb, "Modelo_Coleta_Dados_Producao.xlsx");
-            };
-            // ----------------------------------------------------
-
-            const chartData = useMemo(() => {
-                let filtered = logs.filter(l => l.recipeId == selectedRecipeId && l.stage === selectedStage);
-                if (startDate) filtered = filtered.filter(l => new Date(l.date) >= new Date(startDate));
-                if (endDate) { const end = new Date(endDate); end.setHours(23, 59, 59, 999); filtered = filtered.filter(l => new Date(l.date) <= end); }
-                return filtered.sort((a, b) => new Date(a.date) - new Date(b.date)); 
-            }, [logs, selectedRecipeId, selectedStage, startDate, endDate]);
-
-            // NEW FUNCTION FOR EXPORT
-            const handleExportExcel = () => {
-                if (chartData.length === 0) return;
-
-                const dataToExport = chartData.map(log => {
-                    const deviation = log.yieldPct - log.targetYieldPct;
-                    const isCritical = Math.abs(deviation) > ((log.targetYieldPct * targetTolerance) / 100);
-                    
-                    return {
-                        "Data": new Date(log.date).toLocaleString(),
-                        "Receita": log.recipeName,
-                        "Etapa": log.stage,
-                        "Nº Receitas": log.batches,
-                        "Peso Saída (kg)": log.outputKg,
-                        "Rendimento Real (%)": (log.yieldPct || 0).toFixed(2),
-                        "Meta (%)": (log.targetYieldPct || 0).toFixed(2),
-                        "Status": isCritical ? 'CRÍTICO' : 'OK'
-                    };
-                });
-
-                const ws = XLSX.utils.json_to_sheet(dataToExport);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Dados do Gráfico");
-                XLSX.writeFile(wb, `Monitoramento_${selectedStage}_${new Date().toISOString().slice(0,10)}.xlsx`);
-            };
-
-            return (
-                <div className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <Icon name="Activity" className="text-primary" /> Monitoramento de Etapas (CEP)
-                            </h2>
-                            {/* --- Botão Novo para Baixar Modelo --- */}
-                            <button onClick={handleDownloadTemplate} className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors font-medium text-xs">
-                                <Icon name="Download" size={14} /> Baixar Modelo de Coleta
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Receita</label><div className="w-full"><SearchableSelect options={recipes.map(r => ({label: r.name, value: r.id}))} value={selectedRecipeId} onChange={(val) => { setSelectedRecipeId(val); setSelectedStage(''); }} placeholder="Buscar Receita" disabled={!!editingId} /></div></div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Etapa para Verificar</label><div className="w-full"><SearchableSelect options={availableStages.map(s => ({label: s, value: s}))} value={selectedStage} onChange={setSelectedStage} placeholder="Selecione a Etapa" disabled={!selectedRecipeId || !!editingId} /></div></div>
-                        </div>
-
-                        {selectedStage && (
-                            <form onSubmit={handleRegister} className={`mt-6 p-4 rounded-lg border ${editingId ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-100'}`}>
-                                <h3 className={`font-bold mb-3 text-sm ${editingId ? 'text-yellow-800' : 'text-blue-900'}`}>{editingId ? 'Editando Registro' : 'Registrar Novo Ponto'}</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Data/Hora</label><input type="datetime-local" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={recordDate} onChange={e => setRecordDate(e.target.value)} /></div>
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Nº de Receitas</label><input type="number" step="0.1" onWheel={(e) => e.target.blur()} className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={numBatches} onChange={e => setNumBatches(e.target.value)} /></div>
-                                    <div><label className="block text-xs font-bold mb-1 opacity-70">Peso Final Real (Saída)</label><div className="flex items-center gap-2"><input type="number" step="0.0001" onWheel={(e) => e.target.blur()} placeholder="0.0000" className="w-full p-2 border border-gray-200 rounded-lg text-sm" value={measuredWeightKg} onChange={e => setMeasuredWeightKg(e.target.value)} /><span className="text-xs">kg</span></div></div>
-                                    <div className="flex gap-2"><button type="submit" className={`flex-1 text-white p-2 rounded-lg font-bold text-sm shadow-sm ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-primary hover-bg-primary'}`}>{editingId ? 'Atualizar' : 'Salvar'}</button>{editingId && (<button type="button" onClick={handleCancelEdit} className="bg-gray-200 text-gray-600 p-2 rounded-lg font-bold text-sm hover:bg-gray-300">Cancelar</button>)}</div>
-                                </div>
-                            </form>
-                        )}
-                    </div>
-                    {selectedStage && (
-                        <div className="space-y-6 animate-fade-in">
-                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-wrap gap-4 items-center">
-                                <div className="flex items-center gap-2"><Icon name="Calendar" size={18} className="text-gray-400" /><span className="text-sm font-bold text-gray-700">Filtrar Histórico:</span></div>
-                                <div className="flex gap-2"><input type="date" className="p-2 border border-gray-300 rounded text-sm text-gray-600" value={startDate} onChange={(e) => setStartDate(e.target.value)} /><span className="text-gray-400 self-center">até</span><input type="date" className="p-2 border border-gray-300 rounded text-sm text-gray-600" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
-                                {(startDate || endDate) && <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-blue-500 hover:underline">Limpar</button>}
-                            </div>
-                            {chartData.length > 0 ? (
-                                <>
-                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="font-bold text-gray-700">Carta de Controle: {selectedStage}</h3>
-                                            <div className="text-xs text-gray-500">Meta Teórica: <strong>{targetYieldPct.toFixed(2)}%</strong> (Base: Soma dos Insumos - Perda {targetLossPct.toFixed(2)}%)</div>
-                                        </div>
-                                        <ControlChart data={chartData} targetYield={targetYieldPct} stageName={selectedStage} tolerance={targetTolerance} />
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="font-bold text-gray-800">Histórico Detalhado</h3>
-                                            <button onClick={handleExportExcel} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-xs">
-                                                <Icon name="Download" size={14} /> Exportar Excel
-                                            </button>
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-sm">
-                                                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                                                    <tr><th className="p-3">Data</th><th className="p-3 text-right">Nº Receitas</th><th className="p-3 text-right">Saída (kg)</th><th className="p-3 text-right font-bold">Rendimento</th><th className="p-3 text-right">Custo (+/-)</th><th className="p-3 text-right">Status</th><th className="p-3 text-right">Ações</th></tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {[...chartData].reverse().map(log => {
-                                                        const deviation = log.yieldPct - log.targetYieldPct;
-                                                        const isCritical = Math.abs(deviation) > ((log.targetYieldPct * targetTolerance) / 100);
-                                                        const costImpact = log.yieldPct ? ((log.targetYieldPct / log.yieldPct) - 1) * 100 : 0;
-                                                        const costColor = costImpact > 0 ? 'text-red-500' : 'text-emerald-500';
-                                                        return (
-                                                            <tr key={log.id} className="hover:bg-gray-50">
-                                                                <td className="p-3 text-gray-500 whitespace-nowrap">{new Date(log.date).toLocaleDateString()} {new Date(log.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                                                <td className="p-3 text-right text-gray-600">{log.batches}</td>
-                                                                <td className="p-3 text-right text-gray-800 font-medium">{log.outputKg.toFixed(3)}</td>
-                                                                <td className="p-3 text-right font-bold text-orange-600">{log.yieldPct.toFixed(2)}%</td>
-                                                                <td className={`p-3 text-right font-medium ${costColor}`}>{costImpact > 0 ? '+' : ''}{costImpact.toFixed(2)}%</td>
-                                                                <td className={`p-3 text-right font-medium ${isCritical ? 'text-red-600 font-bold' : 'text-emerald-500'}`}>{isCritical ? 'CRÍTICO' : 'OK'}</td>
-                                                                <td className="p-3 text-right flex justify-end gap-2"><button onClick={() => handleEdit(log)} className="text-primary hover:text-orange-800"><Icon name="Edit" size={16}/></button><button onClick={() => handleDelete(log.id)} className="text-red-500 hover:text-red-700"><Icon name="Trash2" size={16}/></button></td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (<div className="bg-gray-50 p-8 rounded-lg text-center text-gray-400 border border-dashed">Nenhum dado encontrado para o período selecionado.</div>)}
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
         // --- App Componente Principal ---
         const App = () => {
             const [view, setView] = useState('dashboard');
@@ -1614,8 +1549,9 @@
             const deleteLog = (id) => { setLogs(logs.filter(l => l.id !== id)); showNotification("Registro excluído."); };
             
             const saveRecipe = (recipe) => {
-                if (recipe.id) { setRecipes(recipes.map(r => r.id === recipe.id ? recipe : r)); } 
-                else { setRecipes([...recipes, { ...recipe, id: Date.now() }]); }
+                const recipeWithDate = { ...recipe, lastUpdated: new Date().toISOString() };
+                if (recipe.id) { setRecipes(recipes.map(r => r.id === recipe.id ? recipeWithDate : r)); } 
+                else { setRecipes([...recipes, { ...recipeWithDate, id: Date.now() }]); }
                 setEditingRecipe(null); 
                 setViewingRecipe(null); 
                 setView('recipes'); 
