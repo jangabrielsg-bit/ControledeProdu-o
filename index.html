@@ -112,8 +112,12 @@
 
         const formatDate = (isoString) => {
             if (!isoString) return 'Data desconhecida';
-            const date = new Date(isoString);
-            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            if (isoString.includes('T')) {
+                return new Date(isoString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            }
+            const parts = isoString.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+            return isoString;
         };
 
         // --- Ícones ---
@@ -245,7 +249,7 @@
                 name: "Pão Francês Tradicional",
                 line: "Padaria",
                 lastUpdated: new Date().toISOString(),
-                sections: { "Massa": { processLossPct: 15, tolerancePct: 10 } },
+                sections: { "Massa": { processLossPct: 15, tolerancePct: 10, targetSharePct: 100 } },
                 ingredients: [
                     { id: 1, name: "Farinha de Trigo", qty: 25000, unit: "g", lossPct: 0, section: "Massa", fixedQty: 0 },
                     { id: 2, name: "Água Gelada", qty: 15000, unit: "g", lossPct: 0, section: "Massa", fixedQty: 0 },
@@ -254,10 +258,7 @@
                     { id: 5, name: "Melhorador", qty: 250, unit: "g", lossPct: 0, section: "Massa", fixedQty: 0 }
                 ],
                 outputType: 'kg', 
-                outputUnitWeight: 0,
-                targetFillingPct: 0,
-                balanceBase: 'Massa',
-                balanceTarget: 'Recheio'
+                outputUnitWeight: 0
             }
         ];
 
@@ -294,8 +295,8 @@
                         <polyline points={points} fill="none" stroke="#6b7280" strokeWidth="2" />
                         {values.map((val, idx) => (
                             <g key={idx}>
-                                <circle cx={getX(idx)} cy={getY(val)} r="4" fill={val > upperLimit || val < lowerLimit ? "#ef4444" : "#6b7280"} stroke="white" strokeWidth="2"><title>{dates[idx].toLocaleDateString()}: {val.toFixed(2)}%</title></circle>
-                                { (data.length <= 10 || idx % Math.ceil(data.length/10) === 0) && <text x={getX(idx)} y={height - 15} textAnchor="middle" className="text-[9px] fill-gray-500 font-medium" fontSize="9">{dates[idx].toLocaleDateString(undefined, {day:'2-digit', month:'2-digit'})}</text> }
+                                <circle cx={getX(idx)} cy={getY(val)} r="4" fill={val > upperLimit || val < lowerLimit ? "#ef4444" : "#6b7280"} stroke="white" strokeWidth="2"><title>{formatDate(data[idx].date)}: {val.toFixed(2)}%</title></circle>
+                                { (data.length <= 10 || idx % Math.ceil(data.length/10) === 0) && <text x={getX(idx)} y={height - 15} textAnchor="middle" className="text-[9px] fill-gray-500 font-medium" fontSize="9">{formatDate(data[idx].date).slice(0,5)}</text> }
                             </g>
                         ))}
                     </svg>
@@ -362,7 +363,7 @@
                     filtered = filtered.filter(l => {
                         const recipe = recipes.find(r => r.id === l.recipeId);
                         const recipeName = recipe ? recipe.name.toLowerCase() : '';
-                        const dateStr = new Date(l.date).toLocaleDateString('pt-BR');
+                        const dateStr = formatDate(l.date).toLowerCase();
                         return recipeName.includes(term) || dateStr.includes(term);
                     });
                 }
@@ -375,7 +376,7 @@
                     id: Date.now(),
                     recipeId: selectedRecipe.id,
                     yieldPct: parseFloat(yieldValue),
-                    date: entryDate // Use selected date
+                    date: entryDate 
                 };
                 setLogs([...(logs||[]), newLog]);
                 setYieldValue('');
@@ -494,7 +495,7 @@
                                             return (
                                                 <tr key={log.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-3 font-medium text-gray-900 whitespace-nowrap">
-                                                        {new Date(log.date).toLocaleDateString('pt-BR')}
+                                                        {formatDate(log.date)}
                                                     </td>
                                                     <td className="px-6 py-3 text-gray-700">
                                                         {recipeName}
@@ -580,11 +581,16 @@
                 reader.onload = (event) => {
                     try {
                         const importedData = JSON.parse(event.target.result);
-                        if (importedData.recipes) setRecipes(importedData.recipes);
-                        if (importedData.lines) setLines(importedData.lines);
-                        if (importedData.stages) setStages(importedData.stages);
+                        
+                        // Validação simples para evitar carregar arquivo vazio ou inválido
+                        if (!importedData || typeof importedData !== 'object') throw new Error("Arquivo inválido");
+
+                        if (Array.isArray(importedData.recipes)) setRecipes(importedData.recipes);
+                        if (Array.isArray(importedData.lines)) setLines(importedData.lines);
+                        if (Array.isArray(importedData.stages)) setStages(importedData.stages);
                         if (importedData.settings) setSettings(importedData.settings);
-                        if (importedData.logs) setLogs(importedData.logs);
+                        if (Array.isArray(importedData.logs)) setLogs(importedData.logs);
+                        
                         showNotification("Dados restaurados com sucesso!");
                     } catch (error) {
                         onError("Erro ao ler arquivo de backup. Verifique se é um JSON válido.");
@@ -704,63 +710,6 @@
                 return null;
             }, [totalStats.finalWeight, recipe]);
 
-            // --- NOVO: Lógica de Balanceamento (Etapa A vs Etapa B) ---
-            const balanceData = useMemo(() => {
-                const baseStage = recipe.balanceBase || 'Massa';
-                const targetStage = recipe.balanceTarget || 'Recheio';
-
-                // Filtra seções pelo nome exato selecionado
-                const baseSections = Object.keys(sections).filter(s => s === baseStage);
-                const targetSections = Object.keys(sections).filter(s => s === targetStage);
-
-                let baseTotalWeight = 0;
-                let targetTotalWeight = 0;
-
-                baseSections.forEach(s => {
-                    let sectionGross = 0;
-                    sections[s].forEach(i => { if (!isPackaging(i.name)) sectionGross += toKg(i.qty, i.unit); });
-                    // Aplica perda
-                    const loss = recipe.sections?.[s]?.processLossPct || 0;
-                    baseTotalWeight += sectionGross * (1 - (loss / 100));
-                });
-                targetSections.forEach(s => {
-                    let sectionGross = 0;
-                    sections[s].forEach(i => { if (!isPackaging(i.name)) sectionGross += toKg(i.qty, i.unit); });
-                    // Aplica perda
-                    const loss = recipe.sections?.[s]?.processLossPct || 0;
-                    targetTotalWeight += sectionGross * (1 - (loss / 100));
-                });
-
-                const totalPartWeight = baseTotalWeight + targetTotalWeight;
-                const currentTargetPct = totalPartWeight > 0 ? (targetTotalWeight / totalPartWeight) * 100 : 0;
-                const currentBasePct = totalPartWeight > 0 ? (baseTotalWeight / totalPartWeight) * 100 : 0;
-
-                let analysis = null;
-                const targetFilling = recipe.targetFillingPct || 0;
-                
-                if (targetFilling > 0 && totalPartWeight > 0) {
-                    const targetBasePct = 100 - targetFilling;
-                    const idealTargetWeight = (baseTotalWeight * targetFilling) / targetBasePct;
-                    const diff = targetTotalWeight - idealTargetWeight; 
-
-                    analysis = {
-                        idealTargetWeight,
-                        diff,
-                        status: Math.abs(diff) < 0.05 ? 'ok' : (diff > 0 ? 'excess' : 'lack')
-                    };
-                }
-
-                return { 
-                    baseTotalWeight, 
-                    targetTotalWeight, 
-                    currentBasePct, 
-                    currentTargetPct, 
-                    analysis,
-                    baseStage,
-                    targetStage
-                };
-            }, [sections, recipe]);
-
             return (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-fade-in">
                     <div className="bg-orange-50 p-6 border-b border-orange-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -808,71 +757,81 @@
                     </div>
 
                     <div className="p-6 space-y-8">
-                        {/* --- NOVO: Card de Balanceamento Flexível --- */}
-                        {balanceData.analysis && balanceData.baseTotalWeight > 0 && (
-                            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-                                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                    <Icon name="Scale" size={16} className="text-primary" />
-                                    Balanceamento ({balanceData.baseStage} vs {balanceData.targetStage})
-                                </h3>
-                                <div className="flex flex-col md:flex-row gap-6">
-                                    <div className="flex-1">
-                                        <div className="flex justify-between text-xs mb-1">
-                                            <span className="text-gray-500">Distribuição Atual (Considerando Perdas)</span>
-                                            <span className="font-bold text-gray-700">Meta {balanceData.targetStage}: {recipe.targetFillingPct}%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden flex">
-                                            <div className="bg-orange-400 h-full flex items-center justify-center text-[9px] text-white font-bold" style={{ width: `${balanceData.currentBasePct}%` }}>
-                                                {balanceData.baseStage} {balanceData.currentBasePct.toFixed(1)}%
-                                            </div>
-                                            <div className="bg-red-400 h-full flex items-center justify-center text-[9px] text-white font-bold" style={{ width: `${balanceData.currentTargetPct}%` }}>
-                                                {balanceData.targetStage} {balanceData.currentTargetPct.toFixed(1)}%
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex-1 border-l border-gray-100 pl-6 flex flex-col justify-center">
-                                        {balanceData.analysis.status === 'ok' ? (
-                                            <div className="text-emerald-600 font-bold text-sm flex items-center gap-2">
-                                                <Icon name="CheckCircle" size={16} /> Proporção Ideal!
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <div className={`text-sm font-bold flex items-center gap-2 ${balanceData.analysis.diff > 0 ? 'text-red-500' : 'text-blue-500'}`}>
-                                                    <Icon name="AlertTriangle" size={16} />
-                                                    {balanceData.analysis.diff > 0 ? `Excesso de ${balanceData.targetStage}` : `Falta ${balanceData.targetStage}`}
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Para {balanceData.baseTotalWeight.toFixed(2)}kg de {balanceData.baseStage} (líquido), você tem 
-                                                    <strong className={balanceData.analysis.diff > 0 ? 'text-red-600' : 'text-blue-600'}> {Math.abs(balanceData.analysis.diff).toFixed(3)} kg </strong>
-                                                    {balanceData.analysis.diff > 0 ? 'sobrando.' : 'faltando.'}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
+                        {/* --- Loop de Seções com Visualização de Meta vs Real --- */}
                         {Object.keys(sections).map(sectionName => {
                             const sectionIngs = sections[sectionName];
-                            const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0, tolerancePct: 10 };
+                            const sectionConfig = recipe.sections?.[sectionName] || { processLossPct: 0, tolerancePct: 10, targetSharePct: 0 };
                             const isPkgStage = sectionName.toLowerCase().includes('embalagem');
                             
-                            // Soma peso da seção ignorando embalagens (Item ou Etapa inteira)
+                            // Soma peso da seção ignorando embalagens
                             const totalWeight = sectionIngs.reduce((acc, i) => {
                                 if (isPkgStage || isPackaging(i.name)) return acc;
                                 return acc + toKg(i.qty, i.unit);
                             }, 0);
+
+                            const netWeight = totalWeight * (1 - (sectionConfig.processLossPct / 100));
+                            const actualShare = totalStats.finalWeight > 0 ? (netWeight / totalStats.finalWeight) * 100 : 0;
+                            const targetShare = parseFloat(sectionConfig.targetSharePct) || 0;
                             
+                            const diff = actualShare - targetShare;
+                            const statusColor = Math.abs(diff) < 1.0 ? 'bg-emerald-500' : (diff > 0 ? 'bg-blue-500' : 'bg-orange-500');
+
+                            // --- NOVO: Cálculo de Sugestão de Correção ---
+                            let suggestionText = null;
+                            const targetFraction = targetShare / 100;
+
+                            if (targetShare > 0 && totalStats.finalWeight > 0) {
+                                const otherMass = totalStats.finalWeight - netWeight;
+                                // Prevent division by zero if target is 100%
+                                if (targetFraction < 1) {
+                                    const idealWeight = (targetFraction * otherMass) / (1 - targetFraction);
+                                    const weightDiff = idealWeight - netWeight;
+                                    
+                                    if (Math.abs(weightDiff) > 0.001) { // Threshold de 1g
+                                         const action = weightDiff > 0 ? "Adicionar" : "Reduzir";
+                                         const cssClass = weightDiff > 0 ? "text-blue-600" : "text-orange-600";
+                                         suggestionText = (
+                                             <span className={`text-[10px] font-bold ${cssClass} mt-1 block flex items-center gap-1`}>
+                                                <Icon name="Info" size={10} />
+                                                Sugestão: {action} {Math.abs(weightDiff).toFixed(3)} kg para atingir a meta
+                                             </span>
+                                         );
+                                    }
+                                }
+                            }
+
                             return (
                                 <div key={sectionName} className="border border-gray-200 rounded-xl overflow-hidden">
-                                    <div className="bg-orange-50 px-4 py-3 border-b border-orange-100 flex justify-between items-center">
-                                        <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                            <div className="w-2 h-6 bg-primary rounded-full"></div>
-                                            {sectionName} {isPkgStage && <span className="text-[10px] bg-white border border-orange-200 px-2 rounded-full text-orange-400 font-normal">Não conta no peso</span>}
-                                        </h3>
-                                        <div className="flex gap-4 text-xs">
+                                    <div className="bg-orange-50 px-4 py-3 border-b border-orange-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                                        <div className="flex items-center gap-3 w-full md:w-auto">
+                                            <h3 className="font-bold text-gray-700 flex items-center gap-2 whitespace-nowrap">
+                                                <div className="w-2 h-6 bg-primary rounded-full"></div>
+                                                {sectionName}
+                                                {isPkgStage && <span className="text-[10px] bg-white border border-orange-200 px-2 rounded-full text-orange-400 font-normal">Não conta no peso</span>}
+                                            </h3>
+                                        </div>
+
+                                        {/* --- Barra de Progresso Comparativa (Meta vs Real) --- */}
+                                        {!isPkgStage && totalStats.finalWeight > 0 && (
+                                            <div className="flex-1 w-full md:mx-8">
+                                                <div className="flex justify-between text-[10px] uppercase font-bold text-gray-500 mb-1">
+                                                    <span>Real: {actualShare.toFixed(1)}%</span>
+                                                    <span>Meta: {targetShare.toFixed(1)}%</span>
+                                                </div>
+                                                <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    {/* Marcador de Meta */}
+                                                    {targetShare > 0 && (
+                                                        <div className="absolute top-0 bottom-0 w-0.5 bg-black z-20" style={{ left: `${Math.min(targetShare, 100)}%` }} title={`Meta: ${targetShare}%`}></div>
+                                                    )}
+                                                    {/* Barra de Valor Real */}
+                                                    <div className={`h-full ${statusColor} z-10 transition-all duration-500`} style={{width: `${Math.min(actualShare, 100)}%`}}></div>
+                                                </div>
+                                                {/* Exibe a sugestão de correção aqui */}
+                                                {suggestionText}
+                                            </div>
+                                        )}
+
+                                        <div className="flex gap-4 text-xs whitespace-nowrap">
                                             <div className="flex flex-col items-end">
                                                 <span className="text-gray-500 uppercase font-bold text-[10px]">Perda Teórica</span>
                                                 <span className="font-bold text-gray-700">{sectionConfig.processLossPct}%</span>
@@ -896,7 +855,6 @@
                                                         <span className={`font-bold ${(isPkgStage || isPackaging(ing.name)) ? 'text-gray-400' : 'text-gray-800'}`}>{parseFloat(ing.qty).toFixed(3)}</span> <span className="text-xs text-gray-500">{ing.unit}</span>
                                                     </div>
                                                     
-                                                    {/* Exibição da Quantidade Fixa se existir */}
                                                     {ing.fixedQty > 0 && (
                                                         <div className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-medium whitespace-nowrap">
                                                             + {parseFloat(ing.fixedQty)} {ing.unit} (Startup)
@@ -907,7 +865,7 @@
                                         ))}
                                     </div>
                                     <div className="bg-orange-50/50 px-4 py-3 border-t border-orange-100 flex justify-between items-center text-sm">
-                                        <span className="font-bold text-orange-800">Peso Total da Etapa</span>
+                                        <span className="font-bold text-orange-800">Peso Bruto da Etapa</span>
                                         <span className="font-bold text-orange-800">{totalWeight.toFixed(3)} kg</span>
                                     </div>
                                 </div>
@@ -1120,7 +1078,20 @@
             const updateIngredient = (idx, field, value) => { const newIngs = [...form.ingredients]; newIngs[idx][field] = value; setForm({ ...form, ingredients: newIngs }); };
             const addIngredient = (sectionName) => { setForm({ ...form, ingredients: [...form.ingredients, { name: '', qty: 0, unit: 'g', lossPct: 0, section: sectionName, fixedQty: 0 }] }); };
             const removeIngredient = (idx) => { const newIngs = form.ingredients.filter((_, i) => i !== idx); setForm({ ...form, ingredients: newIngs }); };
-            const updateSectionTolerance = (sectionName, value) => { setForm({ ...form, sections: { ...form.sections, [sectionName]: { ...form.sections?.[sectionName], tolerancePct: value } } }); };
+            
+            // Atualiza campos específicos da seção (tolerancePct, targetSharePct, etc)
+            const updateSectionConfig = (sectionName, field, value) => { 
+                setForm({ 
+                    ...form, 
+                    sections: { 
+                        ...form.sections, 
+                        [sectionName]: { 
+                            ...form.sections?.[sectionName], 
+                            [field]: value 
+                        } 
+                    } 
+                }); 
+            };
 
             const calculateSectionData = (sectionName) => {
                 const sectionIngs = form.ingredients.filter(i => (i.section || stages[0]) === sectionName);
@@ -1142,9 +1113,19 @@
             useEffect(() => {
                 const newSections = { ...form.sections };
                 let changed = false;
-                activeSections.forEach(s => { if (!newSections[s]) { newSections[s] = { processLossPct: 0, tolerancePct: 10 }; changed = true; } });
+                activeSections.forEach(s => { 
+                    if (!newSections[s]) { 
+                        newSections[s] = { processLossPct: 0, tolerancePct: 10, targetSharePct: 0 }; 
+                        changed = true; 
+                    } 
+                });
                 if (changed) setForm(prev => ({ ...prev, sections: newSections }));
             }, [activeSections.length]);
+
+            // Cálculo do total das metas para validação visual
+            const totalTargetShare = activeSections.reduce((sum, s) => {
+                return sum + (parseFloat(form.sections?.[s]?.targetSharePct) || 0);
+            }, 0);
 
             const handleSubmit = (e) => {
                 e.preventDefault();
@@ -1162,7 +1143,7 @@
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Linha de Produção</label><div className="w-full"><SearchableSelect options={lines} value={form.line} onChange={(val) => updateField('line', val)} placeholder="Selecione a Linha" /></div></div>
                         </div>
 
-                        {/* NOVO: Configuração de Unidade de Saída */}
+                        {/* Configuração de Unidade de Saída */}
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                             <h3 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
                                 <Icon name="Box" size={16} /> Definição do Produto Final
@@ -1212,58 +1193,50 @@
                             </div>
                         </div>
 
-                        {/* --- NOVO: Estratégia de Balanceamento --- */}
-                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
-                            <h3 className="text-sm font-bold text-orange-800 mb-2 flex items-center gap-2">
-                                <Icon name="Scale" size={16} /> Estratégia de Balanceamento
-                            </h3>
-                            <p className="text-xs text-orange-600 mb-3">Defina qual relação entre etapas deve ser monitorada (ex: Massa vs Recheio).</p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-1">Etapa Base (Ex: Massa)</label>
-                                    <select 
-                                        value={form.balanceBase || activeSections[0] || ''} 
-                                        onChange={e => updateField('balanceBase', e.target.value)}
-                                        className="w-full p-2 border border-orange-200 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
-                                    >
-                                        {activeSections.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-1">Etapa Alvo (Ex: Recheio)</label>
-                                    <select 
-                                        value={form.balanceTarget || activeSections[1] || ''} 
-                                        onChange={e => updateField('balanceTarget', e.target.value)}
-                                        className="w-full p-2 border border-orange-200 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
-                                    >
-                                        {activeSections.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-1">Meta da Etapa Alvo (%)</label>
-                                    <div className="flex items-center gap-2">
-                                        <input 
-                                            type="number" step="0.1" onWheel={(e) => e.target.blur()}
-                                            value={form.targetFillingPct || ''} 
-                                            onChange={e => updateField('targetFillingPct', parseFloat(e.target.value))}
-                                            className="w-full p-2 border border-orange-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                                            placeholder="Ex: 30"
-                                        />
-                                        <span className="text-sm text-gray-500 font-bold">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <div className="space-y-6">
                             {activeSections.map((secName) => {
                                 const { totalInputWeightKg, theoreticalYieldKg } = calculateSectionData(secName);
                                 return (
                                     <div key={secName} className="border border-gray-200 rounded-lg overflow-hidden">
-                                        <div className="bg-orange-50 p-3 flex justify-between items-center border-b border-orange-200">
-                                            <div className="flex items-center gap-3">
-                                                <h3 className="font-bold text-gray-700">{secName}</h3>
-                                                <div className="flex items-center bg-white px-2 py-1 rounded border border-gray-300"><span className="text-[10px] font-bold text-gray-500 mr-2">Tolerância (+/- %)</span><input type="number" onWheel={(e) => e.target.blur()} className="w-10 text-xs font-bold text-center outline-none" value={form.sections?.[secName]?.tolerancePct || 10} onChange={(e) => updateSectionTolerance(secName, parseFloat(e.target.value))} /></div>
+                                        <div className="bg-orange-50 p-3 border-b border-orange-200">
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <h3 className="font-bold text-gray-700">{secName}</h3>
+                                                </div>
+                                                
+                                                <div className="flex gap-4">
+                                                    {/* INPUT DE META POR ETAPA */}
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Meta % Final</span>
+                                                        <div className="flex items-center bg-white px-2 py-1 rounded border border-gray-300 w-24">
+                                                            <input 
+                                                                type="number" 
+                                                                step="0.1"
+                                                                placeholder="0"
+                                                                onWheel={(e) => e.target.blur()} 
+                                                                className="w-full text-xs font-bold text-right outline-none text-blue-600" 
+                                                                value={form.sections?.[secName]?.targetSharePct || ''} 
+                                                                onChange={(e) => updateSectionConfig(secName, 'targetSharePct', parseFloat(e.target.value))} 
+                                                            />
+                                                            <span className="text-xs text-gray-400 ml-1">%</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Tolerância</span>
+                                                        <div className="flex items-center bg-white px-2 py-1 rounded border border-gray-300 w-20">
+                                                            <span className="text-xs text-gray-400 mr-1">±</span>
+                                                            <input 
+                                                                type="number" 
+                                                                onWheel={(e) => e.target.blur()} 
+                                                                className="w-full text-xs font-bold text-center outline-none" 
+                                                                value={form.sections?.[secName]?.tolerancePct || 10} 
+                                                                onChange={(e) => updateSectionConfig(secName, 'tolerancePct', parseFloat(e.target.value))} 
+                                                            />
+                                                            <span className="text-xs text-gray-400 ml-1">%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="p-3 bg-white space-y-3">
@@ -1307,6 +1280,14 @@
                                 </div>
                             )}
                         </div>
+
+                        {/* RODAPÉ COM TOTALIZADOR DE METAS */}
+                        <div className={`p-4 rounded-lg border flex justify-between items-center ${Math.abs(totalTargetShare - 100) < 1 ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                            <span className="text-sm font-bold">Total das Metas: {totalTargetShare.toFixed(1)}%</span>
+                            {Math.abs(totalTargetShare - 100) >= 1 && <span className="text-xs">Ajuste as metas para somar 100%</span>}
+                            {Math.abs(totalTargetShare - 100) < 1 && <span className="text-xs flex items-center gap-1"><Icon name="CheckCircle" size={14}/> Balanceado</span>}
+                        </div>
+
                         <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={onCancel} className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Cancelar</button><button type="submit" className="px-6 py-2 bg-primary text-white font-medium hover-bg-primary rounded-lg shadow-sm">Salvar Receita</button></div>
                     </form>
                 </div>
@@ -1491,8 +1472,10 @@
             const logoSrc = useMemo(() => {
                 const saved = localStorage.getItem('prod_settings');
                 if(saved) {
-                    const parsed = JSON.parse(saved);
-                    return parsed.logo;
+                    try {
+                        const parsed = JSON.parse(saved);
+                        return parsed.logo;
+                    } catch(e) { return null; }
                 }
                 return null;
             }, []);
@@ -1687,29 +1670,25 @@
         };
 
         const App = () => {
-            // Estado Principal com Persistência LocalStorage
+            // Estado Principal com Persistência LocalStorage robusta
             const [view, setView] = useState('dashboard');
             
-            const [recipes, setRecipes] = useState(() => {
-                const saved = localStorage.getItem('prod_recipes');
-                return saved ? JSON.parse(saved) : initialRecipes;
-            });
-            const [lines, setLines] = useState(() => {
-                const saved = localStorage.getItem('prod_lines');
-                return saved ? JSON.parse(saved) : initialLines;
-            });
-            const [stages, setStages] = useState(() => {
-                const saved = localStorage.getItem('prod_stages');
-                return saved ? JSON.parse(saved) : initialStages;
-            });
-            const [settings, setSettings] = useState(() => {
-                const saved = localStorage.getItem('prod_settings');
-                return saved ? JSON.parse(saved) : { logo: null, themeColor: '#f97316' };
-            });
-            const [logs, setLogs] = useState(() => {
-                 const saved = localStorage.getItem('prod_logs');
-                return saved ? JSON.parse(saved) : [];
-            });
+            // Helper para carregar do localStorage com segurança (evita crash se dados corrompidos)
+            const safeLoad = (key, fallback) => {
+                try {
+                    const saved = localStorage.getItem(key);
+                    return saved ? JSON.parse(saved) : fallback;
+                } catch (e) {
+                    console.error(`Erro ao carregar ${key} do localStorage`, e);
+                    return fallback;
+                }
+            };
+
+            const [recipes, setRecipes] = useState(() => safeLoad('prod_recipes', initialRecipes));
+            const [lines, setLines] = useState(() => safeLoad('prod_lines', initialLines));
+            const [stages, setStages] = useState(() => safeLoad('prod_stages', initialStages));
+            const [settings, setSettings] = useState(() => safeLoad('prod_settings', { logo: null, themeColor: '#f97316' }));
+            const [logs, setLogs] = useState(() => safeLoad('prod_logs', []));
 
             const [editingRecipe, setEditingRecipe] = useState(null);
             const [notification, setNotification] = useState(null);
@@ -1752,8 +1731,8 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    // Lógica simples de importação (expansível futuramente)
+                    // Aqui entraria a lógica real do SheetJS se necessário
+                    // const workbook = XLSX.read(data, { type: 'array' });
                     showNotification("Importação processada (Simulação)");
                 };
                 reader.readAsArrayBuffer(file);
