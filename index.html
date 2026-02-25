@@ -269,6 +269,53 @@
                 ],
                 outputType: 'kg', 
                 outputUnitWeight: 0
+            },
+            {
+                id: 2,
+                name: "PANACOTA",
+                line: "Confeitaria",
+                lastUpdated: new Date().toISOString(),
+                outputType: "unit",
+                outputUnitWeight: 130,
+                outputUnitMeasure: "g",
+                sections: {
+                    "CREME": { processLossPct: 0, tolerancePct: 5, targetSharePct: 73 },
+                    "COBERTURA": { processLossPct: 0, tolerancePct: 5, targetSharePct: 27 },
+                    "EMBALAGEM": { processLossPct: 0, tolerancePct: 0, targetSharePct: 0 }
+                },
+                ingredients: [
+                    { name: "Creme de Leite", qty: 0.027, unit: "kg", lossPct: 0, section: "CREME", fixedQty: 0 },
+                    { name: "Leite Condensado", qty: 0.013, unit: "kg", lossPct: 0, section: "CREME", fixedQty: 0 },
+                    { name: "Chantilly Sabor Nata", qty: 0.054, unit: "kg", lossPct: 0, section: "CREME", fixedQty: 0 },
+                    { name: "Gelatina sem Sabor", qty: 0.001, unit: "kg", lossPct: 0, section: "CREME", fixedQty: 0 },
+                    { name: "Preparado de Morango", qty: 0.035, unit: "kg", lossPct: 0, section: "COBERTURA", fixedQty: 0 },
+                    { name: "G 679 - Embalagem Sobremesa", qty: 1, unit: "und", lossPct: 0, section: "EMBALAGEM", fixedQty: 0 },
+                    { name: "Etiqueta", qty: 1, unit: "und", lossPct: 0, section: "EMBALAGEM", fixedQty: 0 }
+                ]
+            },
+            {
+                id: 3,
+                name: "MOUSSE MORANGO",
+                line: "Confeitaria",
+                lastUpdated: new Date().toISOString(),
+                outputType: "unit",
+                outputUnitWeight: 100,
+                outputUnitMeasure: "g",
+                sections: {
+                    "MOUSSE": { processLossPct: 0, tolerancePct: 5, targetSharePct: 15 },
+                    "MOUSSE (BRIGADEIRO BRANCO)": { processLossPct: 6.8, tolerancePct: 5, targetSharePct: 70 },
+                    "DECORAÇÃO": { processLossPct: 0, tolerancePct: 5, targetSharePct: 15 },
+                    "EMBALAGEM": { processLossPct: 0, tolerancePct: 0, targetSharePct: 0 }
+                },
+                ingredients: [
+                    { name: "Creme Culinário", qty: 0.007, unit: "kg", lossPct: 0, section: "MOUSSE", fixedQty: 0 },
+                    { name: "Preparo de Morango", qty: 0.008, unit: "kg", lossPct: 0, section: "MOUSSE", fixedQty: 0 },
+                    { name: "Creme Culinário", qty: 0.026, unit: "kg", lossPct: 0, section: "MOUSSE (BRIGADEIRO BRANCO)", fixedQty: 0 },
+                    { name: "Leite Condensado", qty: 0.054, unit: "kg", lossPct: 0, section: "MOUSSE (BRIGADEIRO BRANCO)", fixedQty: 0 },
+                    { name: "Preparo de Morango", qty: 0.015, unit: "kg", lossPct: 0, section: "DECORAÇÃO", fixedQty: 0 },
+                    { name: "Embalagem Mousse/Cheesecake", qty: 1, unit: "und", lossPct: 0, section: "EMBALAGEM", fixedQty: 0 },
+                    { name: "Etiqueta", qty: 1, unit: "und", lossPct: 0, section: "EMBALAGEM", fixedQty: 0 }
+                ]
             }
         ];
 
@@ -1086,8 +1133,8 @@
             const fileInputRef = useRef(null);
 
             const handleFileChange = (e) => { 
-                if (e.target.files && e.target.files[0]) { 
-                    onImport(e.target.files[0]); 
+                if (e.target.files && e.target.files.length > 0) { 
+                    onImport(e.target.files); 
                     e.target.value = null; 
                 } 
             };
@@ -1175,7 +1222,8 @@
                                 >
                                     <Icon name="Upload" size={18} />
                                 </button>
-                                <input type="file" accept=".xlsx, .xls, .csv" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                                {/* Atributo multiple adicionado para permitir selecionar vários arquivos */}
+                                <input type="file" accept=".xlsx, .xls, .csv" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
                             </div>
                         </div>
                     </div>
@@ -1886,15 +1934,143 @@
                 }
             };
 
-            const handleImportRecipe = (file) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result);
-                    // Aqui entraria a lógica real do SheetJS se necessário
-                    // const workbook = XLSX.read(data, { type: 'array' });
-                    showNotification("Importação processada (Simulação)");
-                };
-                reader.readAsArrayBuffer(file);
+            // Lógica Central de Importação e Processamento do Excel (Em lote)
+            const handleImportRecipe = async (files) => {
+                const fileArray = Array.from(files);
+                let importedCount = 0;
+                let newRecipesBuffer = [];
+                
+                for (let file of fileArray) {
+                    try {
+                        const data = await file.arrayBuffer();
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // NOVO: Loop em todas as abas (pastas de trabalho/planilhas) do arquivo Excel
+                        for (const sheetName of workbook.SheetNames) {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                            if (!rows || rows.length === 0) continue; // Ignora abas vazias
+
+                            // 1. Tentar extrair o nome da receita
+                            let recipeName = sheetName; // Usa o nome da aba como padrão
+                            
+                            // Procurar por tag 'Preparação: '
+                            for (let i=0; i < Math.min(rows.length, 15); i++) {
+                                const row = rows[i];
+                                for (let j=0; j < row.length; j++) {
+                                    if (typeof row[j] === 'string' && row[j].toLowerCase().includes('preparação:')) {
+                                        recipeName = row[j].replace(/preparação:/i, '').trim();
+                                    }
+                                }
+                            }
+
+                            // 2. Identificar cabeçalhos dinamicamente
+                            let headerRowIdx = -1;
+                            let idxIng = -1;
+                            let idxQty = -1;
+
+                            for (let i=0; i < Math.min(rows.length, 20); i++) {
+                                const row = rows[i];
+                                idxIng = row.findIndex(c => typeof c === 'string' && c.toLowerCase().trim() === 'ingrediente');
+                                idxQty = row.findIndex(c => typeof c === 'string' && c.toLowerCase().trim() === 'quantidade');
+                                
+                                if (idxIng !== -1 && idxQty !== -1) {
+                                    headerRowIdx = i;
+                                    break;
+                                }
+                            }
+
+                            if (headerRowIdx === -1) {
+                                console.warn(`Cabeçalhos não encontrados na aba "${sheetName}" do arquivo ${file.name}. Verifique a estruturação.`);
+                                continue; // Pula esta aba específica se for inválida
+                            }
+
+                            const parsedIngredients = [];
+                            let currentSection = 'Geral';
+
+                            // 3. Loop nas linhas de ingredientes
+                            for (let i = headerRowIdx + 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                if (!row || row.length === 0) continue;
+
+                                // Identificar Seção (Geralmente está na primeira coluna e não é vazia)
+                                const col0 = String(row[0] || '').trim();
+                                if (col0 && col0.length > 1 && !col0.toLowerCase().includes('total') && !col0.toLowerCase().includes('rendimento')) {
+                                    currentSection = col0.toUpperCase();
+                                }
+
+                                const ingName = String(row[idxIng] || '').trim();
+                                let qtyRaw = row[idxQty];
+                                
+                                // Critérios de parada e sanitização
+                                if (ingName.toLowerCase().includes('total') || ingName.toLowerCase().includes('rendimento')) break;
+                                if (col0.toLowerCase().includes('total') || col0.toLowerCase().includes('rendimento')) break;
+                                if (!ingName) continue;
+
+                                // Tratamento da quantidade (converte , para . e tenta fazer o parse)
+                                let qty = typeof qtyRaw === 'number' ? qtyRaw : parseFloat(String(qtyRaw).replace(',', '.'));
+                                
+                                if (isNaN(qty)) continue;
+
+                                // Tratamento de Unidade de Medida
+                                let unit = String(row[idxQty + 1] || 'kg').trim().toLowerCase();
+                                if (!unit || unit === '') unit = 'kg';
+
+                                parsedIngredients.push({
+                                    name: ingName,
+                                    qty: qty,
+                                    unit: unit,
+                                    lossPct: 0,
+                                    section: currentSection,
+                                    fixedQty: 0
+                                });
+                            }
+
+                            // 4. Se encontrou ingredientes validos, encapsular numa nova receita
+                            if (parsedIngredients.length > 0) {
+                                const newRecipe = {
+                                    id: Date.now() + Math.floor(Math.random() * 100000) + importedCount, // IDs únicos
+                                    name: recipeName || "Receita Importada",
+                                    line: "Confeitaria", // Vinculando inicialmente como Confeitaria (Editável)
+                                    lastUpdated: new Date().toISOString(),
+                                    sections: {},
+                                    ingredients: parsedIngredients,
+                                    outputType: 'kg',
+                                    outputUnitWeight: 0,
+                                    outputUnitMeasure: 'g'
+                                };
+                                
+                                // Cria as sub-seções iniciais
+                                const uniqueSections = Array.from(new Set(parsedIngredients.map(i => i.section)));
+                                uniqueSections.forEach(s => {
+                                    newRecipe.sections[s] = { processLossPct: 0, tolerancePct: 10, targetSharePct: 0 };
+                                });
+
+                                newRecipesBuffer.push(newRecipe);
+                                importedCount++;
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`Falha no processamento de ${file.name}:`, err);
+                    }
+                }
+                
+                // Conclusão com feedback visual
+                if (importedCount > 0) {
+                    setRecipes(prev => {
+                        // Evita duplicatas exatas pelo nome ignorando maiúsculas/minúsculas
+                        const existingNames = prev.map(r => r.name.toLowerCase().trim());
+                        const filteredNew = newRecipesBuffer.filter(nr => !existingNames.includes(nr.name.toLowerCase().trim()));
+                        return [...prev, ...filteredNew];
+                    });
+                    showNotification(`${importedCount} receita(s) importada(s) de todas as abas com sucesso!`);
+                    
+                    // Garante que a linha Confeitaria exista para o filtro do catálogo
+                    setLines(prev => prev.includes("Confeitaria") ? prev : [...prev, "Confeitaria"]);
+                } else {
+                    showNotification("Aviso: Nenhuma receita válida foi identificada nas abas.");
+                }
             };
 
             // Roteamento de Views
