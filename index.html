@@ -12,82 +12,63 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script>
   tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        fontFamily: { sans: ['Inter','sans-serif'] },
-        colors: {
-          brand: { 50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e' },
-          slate: { 850:'#1a2332' }
-        }
-      }
-    }
+    darkMode:'class',
+    theme:{ extend:{ fontFamily:{ sans:['Inter','sans-serif'] }, colors:{ brand:{50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e'} } } }
   }
 </script>
 <style>
-  body { font-family:'Inter',sans-serif; }
-  .screen { display:none; }
-  .screen.active { display:block; }
-  .nav-item.active .nav-icon { color:#38bdf8; }
-  .nav-item.active .nav-label { color:#38bdf8; font-weight:600; }
-  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; padding:1rem; }
-  .modal-backdrop.open { display:flex; }
-  .modal-box { background:#fff; border-radius:1.25rem; padding:1.5rem; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; }
-  .badge { display:inline-flex; align-items:center; gap:0.25rem; padding:0.2rem 0.6rem; border-radius:9999px; font-size:0.7rem; font-weight:700; white-space:nowrap; }
-  .badge-ok { background:#dcfce7; color:#166534; }
-  .badge-warn { background:#fef9c3; color:#854d0e; }
-  .badge-danger { background:#fee2e2; color:#991b1b; }
-  .badge-info { background:#dbeafe; color:#1e40af; }
-  .badge-gray { background:#f1f5f9; color:#475569; }
-  .skill-chip { display:inline-block; padding:0.15rem 0.5rem; border-radius:6px; font-size:0.7rem; font-weight:600; margin:0.1rem; }
-  .skill-chip.active { background:#0ea5e9; color:#fff; }
-  .skill-chip.inactive { background:#e2e8f0; color:#64748b; }
-  input, select, textarea { outline:none; }
-  input:focus, select:focus, textarea:focus { ring: 2px solid #38bdf8; }
-  @media print { .no-print { display:none!important; } }
-  .table-wrap { overflow-x:auto; border-radius:0.75rem; border:1px solid #e2e8f0; }
-  .base-table { min-width:100%; border-collapse:collapse; }
-  .base-thead th { background:#f8fafc; padding:0.75rem 1rem; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
-  .base-tbody tr { border-bottom:1px solid #f1f5f9; transition:background 0.1s; }
-  .base-tbody tr:hover { background:#f8fafc; }
-  .base-tbody tr:last-child { border-bottom:none; }
-  .base-tbody td { padding:0.75rem 1rem; font-size:0.85rem; color:#334155; }
-  .card { background:#fff; border-radius:1rem; border:1px solid #e2e8f0; }
-  .kpi-card { background:#fff; border-radius:1rem; border:1px solid #e2e8f0; padding:1.25rem; }
-  .alert-row { display:flex; align-items:flex-start; gap:0.75rem; padding:0.875rem 1rem; border-radius:0.75rem; margin-bottom:0.5rem; }
-  .alert-row.danger { background:#fef2f2; border-left:3px solid #ef4444; }
-  .alert-row.warn { background:#fffbeb; border-left:3px solid #f59e0b; }
-  .alert-row.info { background:#eff6ff; border-left:3px solid #3b82f6; }
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:0.4rem; padding:0.6rem 1.25rem; border-radius:0.75rem; font-size:0.875rem; font-weight:600; cursor:pointer; transition:opacity 0.15s; border:none; }
-  .btn:hover { opacity:0.88; }
-  .btn-primary { background:#0ea5e9; color:#fff; }
-  .btn-secondary { background:#f1f5f9; color:#334155; border:1px solid #e2e8f0; }
-  .btn-danger { background:#ef4444; color:#fff; }
-  .btn-success { background:#22c55e; color:#fff; }
-  .btn-sm { padding:0.35rem 0.8rem; font-size:0.78rem; }
-  .form-label { display:block; font-size:0.78rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; text-transform:uppercase; letter-spacing:0.03em; }
-  .form-input { display:block; width:100%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.625rem; padding:0.65rem 0.875rem; font-size:0.9rem; color:#1e293b; transition:border-color 0.15s; }
-  .form-input:focus { border-color:#38bdf8; background:#fff; box-shadow:0 0 0 3px rgba(56,189,248,0.15); }
-  select.form-input { appearance:auto; }
-  .progress-bar { height:6px; background:#e2e8f0; border-radius:9999px; overflow:hidden; }
-  .progress-fill { height:100%; border-radius:9999px; transition:width 0.3s; }
-  #notif { position:fixed; top:1.25rem; left:50%; transform:translateX(-50%); z-index:9999; padding:0.75rem 1.5rem; border-radius:9999px; font-size:0.85rem; font-weight:700; display:none; white-space:nowrap; max-width:90vw; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,0.18); }
-  #notif.show { display:block; animation:slideIn 0.3s; }
-  @keyframes slideIn { from{opacity:0;transform:translate(-50%,-1rem)} to{opacity:1;transform:translate(-50%,0)} }
-  .line-card { position:relative; overflow:hidden; }
-  .line-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
-  .line-card.variedades::before { background:#f59e0b; }
-  .line-card.helicoidal::before { background:#8b5cf6; }
-  .line-card.custom::before { background:#10b981; }
+body{font-family:'Inter',sans-serif;}
+.screen{display:none;}.screen.active{display:block;}
+.nav-item.active .nav-icon,.nav-item.active .nav-label{color:#0ea5e9;}
+.nav-item.active .nav-label{font-weight:700;}
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-backdrop.open{display:flex;}
+.modal-box{background:#fff;border-radius:1.25rem;padding:1.5rem;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;}
+.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:9999px;font-size:.7rem;font-weight:700;white-space:nowrap;}
+.badge-ok{background:#dcfce7;color:#166534;}.badge-warn{background:#fef9c3;color:#854d0e;}
+.badge-danger{background:#fee2e2;color:#991b1b;}.badge-info{background:#dbeafe;color:#1e40af;}
+.badge-purple{background:#f3e8ff;color:#6b21a8;}.badge-gray{background:#f1f5f9;color:#475569;}
+.badge-orange{background:#ffedd5;color:#9a3412;}
+.skill-chip{display:inline-block;padding:.15rem .5rem;border-radius:6px;font-size:.7rem;font-weight:600;margin:.1rem;}
+.skill-chip.on{background:#0ea5e9;color:#fff;}.skill-chip.off{background:#e2e8f0;color:#64748b;}
+@media print{.no-print{display:none!important;}}
+.tw{overflow-x:auto;border-radius:.75rem;border:1px solid #e2e8f0;}
+.bt{min-width:100%;border-collapse:collapse;}
+.bt thead th{background:#f8fafc;padding:.7rem 1rem;text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:1px solid #e2e8f0;white-space:nowrap;}
+.bt tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s;}
+.bt tbody tr:hover{background:#f8fafc;}.bt tbody tr:last-child{border-bottom:none;}
+.bt tbody td{padding:.7rem 1rem;font-size:.85rem;color:#334155;}
+.card{background:#fff;border-radius:1rem;border:1px solid #e2e8f0;}
+.kpi{background:#fff;border-radius:1rem;border:1px solid #e2e8f0;padding:1.2rem;}
+.arow{display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1rem;border-radius:.75rem;margin-bottom:.5rem;}
+.arow.danger{background:#fef2f2;border-left:3px solid #ef4444;}
+.arow.warn{background:#fffbeb;border-left:3px solid #f59e0b;}
+.arow.info{background:#eff6ff;border-left:3px solid #3b82f6;}
+.arow.ok{background:#f0fdf4;border-left:3px solid #22c55e;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:.75rem;font-size:.875rem;font-weight:600;cursor:pointer;transition:opacity .15s;border:none;}
+.btn:hover{opacity:.87;}.btn-p{background:#0ea5e9;color:#fff;}.btn-s{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;}
+.btn-d{background:#ef4444;color:#fff;}.btn-g{background:#22c55e;color:#fff;}.btn-sm{padding:.32rem .75rem;font-size:.78rem;}
+.fi{display:block;width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:.625rem;padding:.65rem .875rem;font-size:.9rem;color:#1e293b;transition:border-color .15s;}
+.fi:focus{border-color:#38bdf8;background:#fff;box-shadow:0 0 0 3px rgba(56,189,248,.15);outline:none;}
+.fl{display:block;font-size:.75rem;font-weight:700;color:#64748b;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.03em;}
+.pb{height:6px;background:#e2e8f0;border-radius:9999px;overflow:hidden;}
+.pf{height:100%;border-radius:9999px;transition:width .3s;}
+#notif{position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:9999;padding:.75rem 1.5rem;border-radius:9999px;font-size:.85rem;font-weight:700;display:none;white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.18);}
+#notif.show{display:block;animation:si .3s;}
+@keyframes si{from{opacity:0;transform:translate(-50%,-1rem)}to{opacity:1;transform:translate(-50%,0)}}
+.lcard{position:relative;overflow:hidden;}.lcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;}
+.lcard.variedades::before{background:#f59e0b;}.lcard.helicoidal::before{background:#8b5cf6;}.lcard.custom::before{background:#10b981;}
+.risco-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .7rem;border-radius:.5rem;font-size:.72rem;font-weight:700;}
+.risco-perda{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+.risco-ruptura{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;}
+.risco-ok{background:#f0fdf4;color:#166534;border:1px solid #86efac;}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
-
-<!-- NOTIFICATION TOAST -->
 <div id="notif"></div>
 
-<!-- ===================== LOGIN ===================== -->
-<div id="login-screen" class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+<!-- LOGIN -->
+<div id="login-screen" class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-br from-slate-900 to-slate-800">
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
       <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand-600 mb-4 shadow-xl">
@@ -97,20 +78,18 @@
       <p class="text-slate-400 text-sm mt-1">Planejamento e Controle da Produção</p>
     </div>
     <div class="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
-      <p class="text-slate-300 text-sm text-center mb-5">Faça login com a mesma conta usada nos apps de Estoque e Expedição</p>
-      <button id="btn-login" class="btn btn-primary w-full text-base py-3">
-        <i class="fa-brands fa-google"></i> Entrar com Google
-      </button>
+      <p class="text-slate-300 text-sm text-center mb-5">Faça login com a mesma conta dos apps de Estoque e Expedição</p>
+      <button id="btn-login" class="btn btn-p w-full text-base py-3"><i class="fa-brands fa-google"></i> Entrar com Google</button>
       <p id="login-error" class="text-red-400 text-xs text-center mt-3 hidden"></p>
     </div>
     <p class="text-slate-500 text-xs text-center mt-6">Desenvolvido por Jan Gabriel</p>
   </div>
 </div>
 
-<!-- ===================== APP ===================== -->
+<!-- APP -->
 <div id="app-screen" class="hidden min-h-screen flex flex-col">
 
-  <!-- TOP BAR -->
+  <!-- TOPBAR -->
   <header class="no-print sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
     <div class="flex items-center gap-3">
       <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
@@ -122,267 +101,248 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <div id="sync-status" class="text-xs text-slate-400 flex items-center gap-1">
+      <div class="text-xs text-slate-400 flex items-center gap-1">
         <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-300"></span>
         <span id="sync-text">--</span>
       </div>
-      <button id="btn-logout" class="btn btn-secondary btn-sm no-print">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
+      <button id="btn-logout" class="btn btn-s btn-sm no-print"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </header>
 
-  <!-- CONTENT -->
   <main class="flex-1 pb-24 overflow-x-hidden">
 
-    <!-- ===== HOME / DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <section id="screen-home" class="screen active p-4 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-5">
         <div>
-          <h2 class="text-xl font-bold text-slate-800">Dashboard PCP</h2>
+          <h2 class="text-xl font-bold">Dashboard PCP</h2>
           <p id="dash-greeting" class="text-slate-500 text-sm"></p>
         </div>
-        <button class="btn btn-primary btn-sm no-print" onclick="showScreen('nova-op')">
-          <i class="fa-solid fa-plus"></i> Nova OP
-        </button>
+        <button class="btn btn-p btn-sm no-print" onclick="showScreen('nova-op')"><i class="fa-solid fa-plus"></i> Nova OP</button>
       </div>
-
-      <!-- KPI Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="kpi-card">
-          <p class="text-slate-500 text-xs font-semibold uppercase mb-1">OPs Abertas</p>
-          <p id="kpi-ops" class="text-3xl font-bold text-brand-600">0</p>
-        </div>
-        <div class="kpi-card">
-          <p class="text-slate-500 text-xs font-semibold uppercase mb-1">Alertas MP</p>
-          <p id="kpi-mp-alerts" class="text-3xl font-bold text-amber-500">0</p>
-        </div>
-        <div class="kpi-card">
-          <p class="text-slate-500 text-xs font-semibold uppercase mb-1">Alertas PA</p>
-          <p id="kpi-pa-alerts" class="text-3xl font-bold text-red-500">0</p>
-        </div>
-        <div class="kpi-card">
-          <p class="text-slate-500 text-xs font-semibold uppercase mb-1">Equipe Hoje</p>
-          <p id="kpi-team" class="text-3xl font-bold text-emerald-600">0</p>
-          <p id="kpi-team-sub" class="text-slate-400 text-xs"></p>
-        </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div class="kpi"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">OPs Abertas</p><p id="kpi-ops" class="text-3xl font-bold text-brand-600">0</p></div>
+        <div class="kpi"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Risco MP</p><p id="kpi-mp" class="text-3xl font-bold text-red-500">0</p><p class="text-slate-400 text-xs">lotes em risco</p></div>
+        <div class="kpi"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Alertas PA</p><p id="kpi-pa" class="text-3xl font-bold text-amber-500">0</p></div>
+        <div class="kpi"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Equipe Hoje</p><p id="kpi-team" class="text-3xl font-bold text-emerald-600">0</p><p id="kpi-team-sub" class="text-slate-400 text-xs"></p></div>
       </div>
-
-      <!-- Alerts Panel -->
-      <div class="grid md:grid-cols-2 gap-4">
-        <!-- MP Alerts -->
+      <div class="grid md:grid-cols-2 gap-4 mb-4">
         <div class="card p-4">
-          <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-flask text-amber-500"></i> Alertas — Matérias-Primas
-          </h3>
-          <div id="dash-mp-alerts"><p class="text-slate-400 text-sm text-center py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando...</p></div>
+          <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2"><i class="fa-solid fa-flask text-amber-500"></i> Riscos — Matérias-Primas</h3>
+          <div id="dash-mp-alerts"><p class="text-slate-400 text-sm text-center py-4"><i class="fa-solid fa-circle-notch fa-spin"></i></p></div>
         </div>
-        <!-- PA Alerts -->
         <div class="card p-4">
-          <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-box text-red-500"></i> Alertas — Produtos Acabados
-          </h3>
-          <div id="dash-pa-alerts"><p class="text-slate-400 text-sm text-center py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando...</p></div>
+          <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2"><i class="fa-solid fa-box text-red-500"></i> Alertas — Produtos Acabados</h3>
+          <div id="dash-pa-alerts"><p class="text-slate-400 text-sm text-center py-4"><i class="fa-solid fa-circle-notch fa-spin"></i></p></div>
         </div>
       </div>
-
-      <!-- Active OPs summary -->
-      <div class="card p-4 mt-4">
-        <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-          <i class="fa-solid fa-clipboard-list text-brand-500"></i> Ordens de Produção Ativas
-        </h3>
-        <div id="dash-ops-list"><p class="text-slate-400 text-sm text-center py-4">Nenhuma OP aberta.</p></div>
+      <div class="card p-4">
+        <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2"><i class="fa-solid fa-clipboard-list text-brand-500"></i> OPs Ativas</h3>
+        <div id="dash-ops"></div>
       </div>
     </section>
 
-    <!-- ===== MATÉRIAS-PRIMAS ===== -->
+    <!-- MATÉRIAS-PRIMAS -->
     <section id="screen-mp" class="screen p-4 max-w-6xl mx-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-flask text-amber-500 mr-2"></i>Matérias-Primas</h2>
-        <button id="btn-mp-refresh" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-right"></i></button>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold"><i class="fa-solid fa-flask text-amber-500 mr-2"></i>Matérias-Primas</h2>
+        <button id="btn-mp-refresh" class="btn btn-s btn-sm"><i class="fa-solid fa-rotate-right"></i></button>
       </div>
-      <!-- Filters -->
-      <div class="flex gap-2 mb-4 flex-wrap">
-        <button class="btn btn-sm btn-primary mp-filter active-filter" data-filter="all">Todos</button>
-        <button class="btn btn-sm btn-secondary mp-filter" data-filter="danger">Crítico</button>
-        <button class="btn btn-sm btn-secondary mp-filter" data-filter="warn">Atenção</button>
-        <button class="btn btn-sm btn-secondary mp-filter" data-filter="ok">OK</button>
+      <!-- Legenda de risco -->
+      <div class="card p-3 mb-3 bg-amber-50 border-amber-200">
+        <p class="text-xs text-amber-800 font-semibold mb-1"><i class="fa-solid fa-circle-info mr-1"></i>Como interpretar os riscos de validade:</p>
+        <div class="flex flex-wrap gap-3 text-xs text-amber-700">
+          <span><span class="risco-badge risco-perda mr-1"><i class="fa-solid fa-skull-crossbones"></i>Risco de Perda</span>= vai sobrar estoque quando o lote vencer</span>
+          <span><span class="risco-badge risco-ruptura mr-1"><i class="fa-solid fa-triangle-exclamation"></i>Ruptura</span>= estoque vai acabar antes do previsto</span>
+          <span><span class="risco-badge risco-ok mr-1"><i class="fa-solid fa-check"></i>OK</span>= consumo compatível com a validade</span>
+        </div>
       </div>
-      <div class="table-wrap">
-        <table class="base-table">
-          <thead class="base-thead">
-            <tr>
-              <th>Produto</th>
-              <th>Tipo</th>
-              <th>Estoque Atual</th>
-              <th>Mínimo</th>
-              <th>Próx. Venc.</th>
-              <th>Lote</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="mp-tbody" class="base-tbody">
-            <tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando do Estoque...</td></tr>
-          </tbody>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <button class="btn btn-sm btn-p mp-f" data-f="all">Todos</button>
+        <button class="btn btn-sm btn-s mp-f" data-f="perda">Risco de Perda</button>
+        <button class="btn btn-sm btn-s mp-f" data-f="ruptura">Ruptura</button>
+        <button class="btn btn-sm btn-s mp-f" data-f="vencendo">Vencendo</button>
+        <button class="btn btn-sm btn-s mp-f" data-f="ok">OK</button>
+      </div>
+      <div class="tw">
+        <table class="bt">
+          <thead><tr>
+            <th>Produto / Lote</th><th>Estoque</th><th>Mín.</th>
+            <th>Validade</th><th>Dias Rest.</th>
+            <th>Consumo/dia</th><th>Cobertura</th><th>Risco</th>
+          </tr></thead>
+          <tbody id="mp-tbody"><tr><td colspan="8" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando...</td></tr></tbody>
         </table>
       </div>
-      <p id="mp-error" class="text-red-500 text-sm mt-3 hidden"></p>
+      <p id="mp-note" class="text-slate-400 text-xs mt-2">* Consumo/dia calculado com base nas OPs planejadas + consumo médio configurado.</p>
     </section>
 
-    <!-- ===== PRODUTOS ACABADOS ===== -->
+    <!-- PRODUTOS ACABADOS -->
     <section id="screen-pa" class="screen p-4 max-w-6xl mx-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-box text-emerald-500 mr-2"></i>Produtos Acabados</h2>
-        <button id="btn-pa-refresh" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-right"></i></button>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold"><i class="fa-solid fa-box text-emerald-500 mr-2"></i>Produtos Acabados</h2>
+        <button id="btn-pa-refresh" class="btn btn-s btn-sm"><i class="fa-solid fa-rotate-right"></i></button>
       </div>
-      <div class="flex gap-2 mb-4 flex-wrap">
-        <button class="btn btn-sm btn-primary pa-filter active-filter" data-filter="all">Todos</button>
-        <button class="btn btn-sm btn-secondary pa-filter" data-filter="danger">Vencido/Crítico</button>
-        <button class="btn btn-sm btn-secondary pa-filter" data-filter="warn">Vencendo</button>
-        <button class="btn btn-sm btn-secondary pa-filter" data-filter="ok">OK</button>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <button class="btn btn-sm btn-p pa-f" data-f="all">Todos</button>
+        <button class="btn btn-sm btn-s pa-f" data-f="danger">Vencido/Crítico</button>
+        <button class="btn btn-sm btn-s pa-f" data-f="warn">Vencendo</button>
+        <button class="btn btn-sm btn-s pa-f" data-f="ok">OK</button>
       </div>
-      <div class="table-wrap">
-        <table class="base-table">
-          <thead class="base-thead">
-            <tr>
-              <th>Produto</th>
-              <th>Setor</th>
-              <th>Lote</th>
-              <th>Quantidade</th>
-              <th>Validade</th>
-              <th>Dias Rest.</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="pa-tbody" class="base-tbody">
-            <tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando da Expedição...</td></tr>
-          </tbody>
+      <div class="tw">
+        <table class="bt">
+          <thead><tr><th>Produto</th><th>Setor</th><th>Lote</th><th>Qtd</th><th>Validade</th><th>Dias</th><th>Status</th></tr></thead>
+          <tbody id="pa-tbody"><tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando...</td></tr></tbody>
         </table>
       </div>
-      <p id="pa-error" class="text-red-500 text-sm mt-3 hidden"></p>
     </section>
 
-    <!-- ===== LINHAS DE PRODUÇÃO ===== -->
+    <!-- RECEITAS (FICHAS TÉCNICAS) -->
+    <section id="screen-receitas" class="screen p-4 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold"><i class="fa-solid fa-book-open text-violet-500 mr-2"></i>Fichas Técnicas</h2>
+          <p class="text-slate-400 text-xs mt-0.5">Importadas do app Estoque (Expedi-o) — somente leitura aqui</p>
+        </div>
+        <button id="btn-rec-refresh" class="btn btn-s btn-sm"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <input type="text" id="rec-search" class="fi w-48" placeholder="Buscar receita...">
+      </div>
+      <div id="receitas-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <p class="text-slate-400 text-sm col-span-3 text-center py-8"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i>Carregando fichas técnicas...</p>
+      </div>
+    </section>
+
+    <!-- LINHAS -->
     <section id="screen-linhas" class="screen p-4 max-w-4xl mx-auto">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-gears text-purple-500 mr-2"></i>Linhas de Produção</h2>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-linha')">
-          <i class="fa-solid fa-plus"></i> Nova Linha
-        </button>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold"><i class="fa-solid fa-gears text-purple-500 mr-2"></i>Linhas de Produção</h2>
+        <button class="btn btn-p btn-sm" onclick="openModal('modal-linha')"><i class="fa-solid fa-plus"></i> Nova Linha</button>
       </div>
       <div id="linhas-list" class="grid sm:grid-cols-2 gap-4"></div>
     </section>
 
-    <!-- ===== EQUIPE ===== -->
+    <!-- EQUIPE -->
     <section id="screen-equipe" class="screen p-4 max-w-5xl mx-auto">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-users text-teal-500 mr-2"></i>Equipe & Habilidades</h2>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-funcionario')">
-          <i class="fa-solid fa-user-plus"></i> Funcionário
-        </button>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold"><i class="fa-solid fa-users text-teal-500 mr-2"></i>Equipe & Habilidades</h2>
+        <button class="btn btn-p btn-sm" onclick="openModal('modal-funcionario')"><i class="fa-solid fa-user-plus"></i> Funcionário</button>
       </div>
-      <!-- Absence alert -->
-      <div id="absence-alert" class="hidden alert-row warn mb-4">
+      <div id="absence-alert" class="hidden arow warn mb-3">
         <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
-        <div id="absence-alert-text"></div>
+        <div id="absence-text"></div>
       </div>
-      <div class="table-wrap">
-        <table class="base-table">
-          <thead class="base-thead">
-            <tr>
-              <th>Funcionário</th>
-              <th>Setor</th>
-              <th>Habilidades (Linhas)</th>
-              <th>Status</th>
-              <th class="no-print">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="equipe-tbody" class="base-tbody">
-            <tr><td colspan="5" class="text-center py-8 text-slate-400">Nenhum funcionário cadastrado.</td></tr>
-          </tbody>
+      <div class="tw">
+        <table class="bt">
+          <thead><tr><th>Funcionário</th><th>Setor</th><th>Habilidades</th><th>Status</th><th class="no-print">Ações</th></tr></thead>
+          <tbody id="equipe-tbody"><tr><td colspan="5" class="text-center py-8 text-slate-400">Nenhum funcionário cadastrado.</td></tr></tbody>
         </table>
       </div>
-      <!-- Matriz de Habilidades visual -->
       <div class="card p-4 mt-4">
         <h3 class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-table-cells text-brand-500 mr-2"></i>Matriz de Habilidades</h3>
         <div id="skill-matrix" class="overflow-x-auto"></div>
       </div>
     </section>
 
-    <!-- ===== NOVA OP ===== -->
+    <!-- NOVA OP -->
     <section id="screen-nova-op" class="screen p-4 max-w-3xl mx-auto">
-      <div class="flex items-center gap-3 mb-5">
-        <button class="btn btn-secondary btn-sm" onclick="showScreen('ordens')"><i class="fa-solid fa-arrow-left"></i></button>
-        <h2 class="text-xl font-bold text-slate-800">Nova Ordem de Produção</h2>
+      <div class="flex items-center gap-3 mb-4">
+        <button class="btn btn-s btn-sm" onclick="showScreen('ordens')"><i class="fa-solid fa-arrow-left"></i></button>
+        <h2 class="text-xl font-bold">Nova Ordem de Produção</h2>
       </div>
       <div class="card p-5">
         <form id="form-nova-op" class="space-y-4">
-          <div class="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label class="form-label">Linha de Produção *</label>
-              <select id="op-linha" class="form-input" required>
-                <option value="">Selecionar linha...</option>
-              </select>
+          <!-- STEP 1: Escolher ficha técnica -->
+          <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">
+            <p class="font-bold text-violet-800 text-sm mb-3"><i class="fa-solid fa-book-open mr-1"></i>1. Selecionar Ficha Técnica</p>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div class="sm:col-span-2">
+                <label class="fl">Ficha Técnica (Receita) *</label>
+                <select id="op-receita" class="fi" required>
+                  <option value="">Selecione a ficha técnica...</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="form-label">Produto / Descrição *</label>
-              <input type="text" id="op-produto" class="form-input" placeholder="Ex: Pão Francês 50g" required>
+            <!-- Preview da receita selecionada -->
+            <div id="op-receita-preview" class="hidden mt-3 bg-white rounded-lg p-3 border border-violet-200">
+              <p class="text-xs font-bold text-slate-500 uppercase mb-2">Ingredientes por batelada:</p>
+              <div id="op-receita-ingredientes" class="space-y-1"></div>
             </div>
-            <div>
-              <label class="form-label">Quantidade (kg) *</label>
-              <input type="number" id="op-quantidade" class="form-input" min="1" step="0.1" required>
-            </div>
-            <div>
-              <label class="form-label">Data de Produção *</label>
-              <input type="date" id="op-data" class="form-input" required>
-            </div>
-            <div>
-              <label class="form-label">Turno</label>
-              <select id="op-turno" class="form-input">
-                <option value="manha">Manhã</option>
-                <option value="tarde">Tarde</option>
-                <option value="noite">Noite</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Prioridade</label>
-              <select id="op-prioridade" class="form-input">
-                <option value="normal">Normal</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="form-label">Observações</label>
-            <textarea id="op-obs" class="form-input" rows="2" placeholder="Observações opcionais..."></textarea>
           </div>
 
-          <!-- CÁLCULO AUTOMÁTICO -->
-          <div id="op-calc-panel" class="hidden bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <h3 class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-calculator text-brand-500 mr-2"></i>Cálculo Automático</h3>
+          <!-- STEP 2: Parâmetros da OP -->
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <p class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-sliders mr-1"></i>2. Parâmetros</p>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label class="fl">Linha de Produção *</label>
+                <select id="op-linha" class="fi" required>
+                  <option value="">Selecionar linha...</option>
+                </select>
+              </div>
+              <div>
+                <label class="fl">Quantidade a produzir (kg) *</label>
+                <input type="number" id="op-quantidade" class="fi" min="1" step="0.1" required>
+              </div>
+              <div>
+                <label class="fl">Data *</label>
+                <input type="date" id="op-data" class="fi" required>
+              </div>
+              <div>
+                <label class="fl">Turno</label>
+                <select id="op-turno" class="fi">
+                  <option value="manha">Manhã</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="noite">Noite</option>
+                </select>
+              </div>
+              <div>
+                <label class="fl">Prioridade</label>
+                <select id="op-prioridade" class="fi">
+                  <option value="normal">Normal</option>
+                  <option value="alta">Alta</option>
+                  <option value="urgente">Urgente</option>
+                </select>
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="fl">Observações</label>
+              <textarea id="op-obs" class="fi" rows="2"></textarea>
+            </div>
+          </div>
+
+          <!-- STEP 3: Cálculo automático -->
+          <div id="op-calc" class="hidden bg-brand-50 rounded-xl p-4 border border-brand-200">
+            <p class="font-bold text-brand-800 text-sm mb-3"><i class="fa-solid fa-calculator mr-1"></i>3. Cálculo Automático</p>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div class="text-center">
-                <p class="text-slate-500 text-xs font-semibold uppercase">Bateladas</p>
-                <p id="calc-bateladas" class="text-2xl font-bold text-brand-600">--</p>
+              <div class="text-center bg-white rounded-xl p-3 border border-brand-100">
+                <p class="text-slate-400 text-xs">Bateladas</p>
+                <p id="calc-bat" class="text-2xl font-bold text-brand-600">--</p>
               </div>
-              <div class="text-center">
-                <p class="text-slate-500 text-xs font-semibold uppercase">Tempo Total</p>
+              <div class="text-center bg-white rounded-xl p-3 border border-brand-100">
+                <p class="text-slate-400 text-xs">Tempo Total</p>
                 <p id="calc-tempo" class="text-2xl font-bold text-purple-600">--</p>
-                <p class="text-slate-400 text-xs">minutos</p>
+                <p class="text-slate-400 text-xs">min</p>
               </div>
-              <div class="text-center">
-                <p class="text-slate-500 text-xs font-semibold uppercase">Func. Necessários</p>
-                <p id="calc-func-necessarios" class="text-2xl font-bold text-teal-600">--</p>
+              <div class="text-center bg-white rounded-xl p-3 border border-brand-100">
+                <p class="text-slate-400 text-xs">Func. Mín.</p>
+                <p id="calc-fn" class="text-2xl font-bold text-teal-600">--</p>
               </div>
-              <div class="text-center">
-                <p class="text-slate-500 text-xs font-semibold uppercase">Func. Disponíveis</p>
-                <p id="calc-func-disponiveis" class="text-2xl font-bold text-emerald-600">--</p>
+              <div class="text-center bg-white rounded-xl p-3 border border-brand-100">
+                <p class="text-slate-400 text-xs">Disponíveis</p>
+                <p id="calc-fd" class="text-2xl font-bold text-emerald-600">--</p>
               </div>
             </div>
 
-            <!-- Alerta de falta de pessoal -->
-            <div id="calc-shortage-alert" class="hidden alert-row danger mb-3">
+            <!-- Necessidade de MP -->
+            <div id="calc-mp-panel" class="hidden mb-3">
+              <p class="font-semibold text-slate-700 text-sm mb-2"><i class="fa-solid fa-flask text-amber-500 mr-1"></i>Necessidade de Matérias-Primas:</p>
+              <div id="calc-mp-list" class="space-y-1"></div>
+            </div>
+
+            <!-- Alerta de pessoal -->
+            <div id="calc-shortage" class="hidden arow danger mb-3">
               <i class="fa-solid fa-triangle-exclamation text-red-500 mt-0.5"></i>
               <div>
                 <p class="font-bold text-red-700 text-sm">Falta de pessoal!</p>
@@ -391,12 +351,12 @@
             </div>
 
             <!-- Sugestão de realocação -->
-            <div id="calc-realloc-panel" class="hidden">
-              <p class="font-semibold text-slate-700 text-sm mb-2"><i class="fa-solid fa-shuffle text-amber-500 mr-1"></i>Sugestão de Realocação (Matriz de Habilidades):</p>
+            <div id="calc-realloc" class="hidden mb-3">
+              <p class="font-semibold text-slate-700 text-sm mb-2"><i class="fa-solid fa-shuffle text-amber-500 mr-1"></i>Sugestão de Realocação:</p>
               <div id="calc-realloc-list" class="space-y-1"></div>
             </div>
 
-            <!-- Funcionários selecionados -->
+            <!-- Funcionários -->
             <div>
               <p class="font-semibold text-slate-700 text-sm mb-2"><i class="fa-solid fa-user-check text-teal-500 mr-1"></i>Alocar Funcionários:</p>
               <div id="calc-func-list" class="space-y-1"></div>
@@ -404,204 +364,153 @@
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="submit" class="btn btn-primary flex-1">
-              <i class="fa-solid fa-save"></i> Lançar Ordem de Produção
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="showScreen('ordens')">Cancelar</button>
+            <button type="submit" class="btn btn-p flex-1"><i class="fa-solid fa-save"></i> Lançar Ordem</button>
+            <button type="button" class="btn btn-s" onclick="showScreen('ordens')">Cancelar</button>
           </div>
         </form>
       </div>
     </section>
 
-    <!-- ===== ORDENS DE PRODUÇÃO ===== -->
+    <!-- ORDENS -->
     <section id="screen-ordens" class="screen p-4 max-w-6xl mx-auto">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-clipboard-list text-brand-500 mr-2"></i>Ordens de Produção</h2>
-        <button class="btn btn-primary btn-sm" onclick="showScreen('nova-op')">
-          <i class="fa-solid fa-plus"></i> Nova OP
-        </button>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold"><i class="fa-solid fa-clipboard-list text-brand-500 mr-2"></i>Ordens de Produção</h2>
+        <button class="btn btn-p btn-sm" onclick="showScreen('nova-op')"><i class="fa-solid fa-plus"></i> Nova OP</button>
       </div>
-      <!-- Filter tabs -->
-      <div class="flex gap-2 mb-4 flex-wrap">
-        <button class="btn btn-sm btn-primary op-filter active-filter" data-filter="all">Todas</button>
-        <button class="btn btn-sm btn-secondary op-filter" data-filter="pendente">Pendentes</button>
-        <button class="btn btn-sm btn-secondary op-filter" data-filter="em_andamento">Em Andamento</button>
-        <button class="btn btn-sm btn-secondary op-filter" data-filter="concluida">Concluídas</button>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <button class="btn btn-sm btn-p op-f" data-f="all">Todas</button>
+        <button class="btn btn-sm btn-s op-f" data-f="pendente">Pendentes</button>
+        <button class="btn btn-sm btn-s op-f" data-f="em_andamento">Em Andamento</button>
+        <button class="btn btn-sm btn-s op-f" data-f="concluida">Concluídas</button>
       </div>
-      <div id="ordens-list" class="space-y-3">
-        <p class="text-slate-400 text-sm text-center py-8">Nenhuma ordem de produção encontrada.</p>
-      </div>
+      <div id="ordens-list"><p class="text-slate-400 text-sm text-center py-8">Nenhuma ordem encontrada.</p></div>
     </section>
 
-    <!-- ===== CONFIG ===== -->
+    <!-- CONFIG -->
     <section id="screen-config" class="screen p-4 max-w-2xl mx-auto">
-      <h2 class="text-xl font-bold text-slate-800 mb-5"><i class="fa-solid fa-sliders text-slate-500 mr-2"></i>Configurações</h2>
+      <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-sliders text-slate-500 mr-2"></i>Configurações</h2>
       <div class="space-y-4">
         <div class="card p-4">
           <h3 class="font-bold text-slate-700 mb-3">Alertas de Validade</h3>
-          <div class="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label class="form-label">Dias para alerta de MP (vencimento)</label>
-              <input type="number" id="cfg-dias-mp" class="form-input" value="7" min="1" max="60">
-            </div>
-            <div>
-              <label class="form-label">Dias para alerta de PA (vencimento)</label>
-              <input type="number" id="cfg-dias-pa" class="form-input" value="3" min="1" max="30">
-            </div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div><label class="fl">Alerta MP (dias antes do vencimento)</label><input type="number" id="cfg-dias-mp" class="fi" value="7" min="1"></div>
+            <div><label class="fl">Alerta PA (dias antes do vencimento)</label><input type="number" id="cfg-dias-pa" class="fi" value="3" min="1"></div>
           </div>
         </div>
         <div class="card p-4">
-          <h3 class="font-bold text-slate-700 mb-3">Acesso ao Estoque (Expedi-o)</h3>
-          <div>
-            <label class="form-label">UID do banco mestre <span class="text-slate-400 font-normal">(deixe em branco para usar seu próprio UID)</span></label>
-            <input type="text" id="cfg-master-uid" class="form-input font-mono" placeholder="Auto-detectado">
-          </div>
-          <p class="text-slate-400 text-xs mt-2">Se você for o admin principal do sistema, pode deixar em branco.</p>
+          <h3 class="font-bold text-slate-700 mb-3">Consumo Médio Diário (MP)</h3>
+          <p class="text-slate-500 text-xs mb-3">Configure o consumo médio diário de cada matéria-prima para calcular o risco de perda. Deixe 0 para calcular automaticamente das OPs.</p>
+          <div id="cfg-consumo-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
         </div>
         <div class="card p-4">
-          <h3 class="font-bold text-slate-700 mb-3">Dados</h3>
+          <h3 class="font-bold text-slate-700 mb-3">Acesso ao Estoque</h3>
+          <div><label class="fl">UID do banco mestre (deixe em branco para usar seu UID)</label><input type="text" id="cfg-master-uid" class="fi font-mono" placeholder="Auto-detectado"></div>
+        </div>
+        <div class="card p-4">
+          <h3 class="font-bold text-slate-700 mb-3">Dados PCP</h3>
           <div class="flex flex-wrap gap-2">
-            <button class="btn btn-secondary btn-sm" onclick="exportData()"><i class="fa-solid fa-download"></i> Exportar PCP</button>
-            <button class="btn btn-secondary btn-sm" onclick="importData()"><i class="fa-solid fa-upload"></i> Importar PCP</button>
-            <button class="btn btn-danger btn-sm" onclick="clearAllData()"><i class="fa-solid fa-trash"></i> Limpar Dados PCP</button>
+            <button class="btn btn-s btn-sm" onclick="exportData()"><i class="fa-solid fa-download"></i> Exportar</button>
+            <button class="btn btn-s btn-sm" onclick="importData()"><i class="fa-solid fa-upload"></i> Importar</button>
+            <button class="btn btn-d btn-sm" onclick="clearAllData()"><i class="fa-solid fa-trash"></i> Limpar</button>
           </div>
         </div>
-        <button class="btn btn-primary w-full" onclick="saveConfig()">
-          <i class="fa-solid fa-save"></i> Salvar Configurações
-        </button>
+        <button class="btn btn-p w-full" onclick="saveConfig()"><i class="fa-solid fa-save"></i> Salvar Configurações</button>
       </div>
     </section>
 
   </main>
 
   <!-- BOTTOM NAV -->
-  <nav class="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 flex justify-around items-center h-16 px-2 shadow-lg">
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1 active" data-screen="home">
-      <i class="fa-solid fa-house nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">Início</span>
+  <nav class="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 flex justify-around items-center h-16 px-1 shadow-lg">
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1 active" data-s="home">
+      <i class="fa-solid fa-house nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Início</span>
     </button>
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-screen="mp">
-      <i class="fa-solid fa-flask nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">MP</span>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="mp">
+      <i class="fa-solid fa-flask nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">MP</span>
     </button>
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-screen="pa">
-      <i class="fa-solid fa-box nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">PA</span>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="pa">
+      <i class="fa-solid fa-box nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">PA</span>
     </button>
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-screen="linhas">
-      <i class="fa-solid fa-gears nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">Linhas</span>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="receitas">
+      <i class="fa-solid fa-book-open nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Fichas</span>
     </button>
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-screen="equipe">
-      <i class="fa-solid fa-users nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">Equipe</span>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="equipe">
+      <i class="fa-solid fa-users nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Equipe</span>
     </button>
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-screen="ordens">
-      <i class="fa-solid fa-clipboard-list nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">OPs</span>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="ordens">
+      <i class="fa-solid fa-clipboard-list nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">OPs</span>
     </button>
-    <button class="nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-screen="config">
-      <i class="fa-solid fa-sliders nav-icon text-xl text-slate-400"></i>
-      <span class="nav-label text-xs text-slate-400">Config</span>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="linhas">
+      <i class="fa-solid fa-gears nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Linhas</span>
+    </button>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="config">
+      <i class="fa-solid fa-sliders nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Config</span>
     </button>
   </nav>
+</div>
 
-</div><!-- /app-screen -->
-
-<!-- ===================== MODALS ===================== -->
-
-<!-- MODAL: NOVA/EDIT LINHA -->
+<!-- MODAL: LINHA -->
 <div id="modal-linha" class="modal-backdrop" onclick="if(event.target===this)closeModal('modal-linha')">
   <div class="modal-box">
     <div class="flex justify-between items-center mb-4">
-      <h3 class="font-bold text-slate-800 text-lg" id="modal-linha-title">Nova Linha de Produção</h3>
+      <h3 id="modal-linha-title" class="font-bold text-lg">Nova Linha</h3>
       <button onclick="closeModal('modal-linha')" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
     </div>
     <form id="form-linha" class="space-y-3">
       <input type="hidden" id="linha-id">
       <div class="grid sm:grid-cols-2 gap-3">
-        <div class="sm:col-span-2">
-          <label class="form-label">Nome da Linha *</label>
-          <input type="text" id="linha-nome" class="form-input" placeholder="Ex: Linha Pães Variedades" required>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="form-label">Descrição</label>
-          <input type="text" id="linha-descricao" class="form-input" placeholder="Descrição breve">
-        </div>
-        <div>
-          <label class="form-label">Tempo por Batelada (min) *</label>
-          <input type="number" id="linha-tempo-batelada" class="form-input" min="1" required>
-        </div>
-        <div>
-          <label class="form-label">Capacidade por Batelada (kg) *</label>
-          <input type="number" id="linha-capacidade" class="form-input" min="0.1" step="0.1" required>
-        </div>
-        <div>
-          <label class="form-label">Funcionários Mínimos *</label>
-          <input type="number" id="linha-func-min" class="form-input" min="1" value="2" required>
-        </div>
-        <div>
-          <label class="form-label">Tempo de Setup (min)</label>
-          <input type="number" id="linha-setup" class="form-input" min="0" value="10">
-        </div>
+        <div class="sm:col-span-2"><label class="fl">Nome *</label><input type="text" id="linha-nome" class="fi" required></div>
+        <div class="sm:col-span-2"><label class="fl">Descrição</label><input type="text" id="linha-desc" class="fi"></div>
+        <div><label class="fl">Tempo/Batelada (min) *</label><input type="number" id="linha-tempo" class="fi" min="1" required></div>
+        <div><label class="fl">Capacidade/Batelada (kg) *</label><input type="number" id="linha-cap" class="fi" min="0.1" step="0.1" required></div>
+        <div><label class="fl">Funcionários Mínimos *</label><input type="number" id="linha-fmin" class="fi" min="1" value="2" required></div>
+        <div><label class="fl">Tempo Setup (min)</label><input type="number" id="linha-setup" class="fi" min="0" value="10"></div>
       </div>
       <div class="flex gap-3 pt-2">
-        <button type="submit" class="btn btn-primary flex-1"><i class="fa-solid fa-save"></i> Salvar</button>
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-linha')">Cancelar</button>
+        <button type="submit" class="btn btn-p flex-1"><i class="fa-solid fa-save"></i> Salvar</button>
+        <button type="button" class="btn btn-s" onclick="closeModal('modal-linha')">Cancelar</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- MODAL: NOVO/EDIT FUNCIONÁRIO -->
+<!-- MODAL: FUNCIONÁRIO -->
 <div id="modal-funcionario" class="modal-backdrop" onclick="if(event.target===this)closeModal('modal-funcionario')">
   <div class="modal-box">
     <div class="flex justify-between items-center mb-4">
-      <h3 class="font-bold text-slate-800 text-lg" id="modal-func-title">Novo Funcionário</h3>
+      <h3 id="modal-func-title" class="font-bold text-lg">Novo Funcionário</h3>
       <button onclick="closeModal('modal-funcionario')" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
     </div>
     <form id="form-funcionario" class="space-y-3">
       <input type="hidden" id="func-id">
       <div class="grid sm:grid-cols-2 gap-3">
-        <div class="sm:col-span-2">
-          <label class="form-label">Nome Completo *</label>
-          <input type="text" id="func-nome" class="form-input" required>
-        </div>
-        <div>
-          <label class="form-label">Setor / Função *</label>
-          <input type="text" id="func-setor" class="form-input" placeholder="Ex: Panificação" required>
-        </div>
-        <div>
-          <label class="form-label">Status</label>
-          <select id="func-status" class="form-input">
-            <option value="presente">Presente</option>
-            <option value="ausente">Ausente</option>
-            <option value="ferias">Férias</option>
-            <option value="afastado">Afastado</option>
+        <div class="sm:col-span-2"><label class="fl">Nome *</label><input type="text" id="func-nome" class="fi" required></div>
+        <div><label class="fl">Setor / Função *</label><input type="text" id="func-setor" class="fi" required></div>
+        <div><label class="fl">Status</label>
+          <select id="func-status" class="fi">
+            <option value="presente">Presente</option><option value="ausente">Ausente</option>
+            <option value="ferias">Férias</option><option value="afastado">Afastado</option>
           </select>
         </div>
       </div>
-      <div>
-        <label class="form-label">Habilidades — Linhas que opera</label>
-        <div id="func-habilidades-list" class="flex flex-wrap gap-2 mt-2"></div>
-      </div>
+      <div><label class="fl">Habilidades — Linhas que opera</label><div id="func-hab-list" class="flex flex-wrap gap-2 mt-2"></div></div>
       <div class="flex gap-3 pt-2">
-        <button type="submit" class="btn btn-primary flex-1"><i class="fa-solid fa-save"></i> Salvar</button>
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-funcionario')">Cancelar</button>
+        <button type="submit" class="btn btn-p flex-1"><i class="fa-solid fa-save"></i> Salvar</button>
+        <button type="button" class="btn btn-s" onclick="closeModal('modal-funcionario')">Cancelar</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- MODAL: DETALHES OP -->
-<div id="modal-op-detail" class="modal-backdrop" onclick="if(event.target===this)closeModal('modal-op-detail')">
+<!-- MODAL: DETALHE OP -->
+<div id="modal-op" class="modal-backdrop" onclick="if(event.target===this)closeModal('modal-op')">
   <div class="modal-box">
     <div class="flex justify-between items-center mb-4">
-      <h3 class="font-bold text-slate-800 text-lg" id="op-detail-title">Ordem de Produção</h3>
-      <button onclick="closeModal('modal-op-detail')" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+      <h3 id="op-detail-title" class="font-bold text-lg">Ordem de Produção</h3>
+      <button onclick="closeModal('modal-op')" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
     </div>
-    <div id="op-detail-content"></div>
-    <div class="flex gap-2 mt-4" id="op-detail-actions"></div>
+    <div id="op-detail-body"></div>
+    <div id="op-detail-actions" class="flex gap-2 mt-4"></div>
   </div>
 </div>
 
@@ -609,1119 +518,768 @@
 <div id="modal-confirm" class="modal-backdrop" onclick="if(event.target===this)closeModal('modal-confirm')">
   <div class="modal-box max-w-sm text-center">
     <i class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl mb-3"></i>
-    <h3 id="confirm-title" class="font-bold text-slate-800 text-lg mb-2"></h3>
+    <h3 id="confirm-title" class="font-bold text-lg mb-2"></h3>
     <p id="confirm-msg" class="text-slate-500 text-sm mb-5"></p>
     <div class="flex gap-3 justify-center">
-      <button id="confirm-yes" class="btn btn-danger">Sim, confirmar</button>
-      <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button id="confirm-yes" class="btn btn-d">Confirmar</button>
+      <button class="btn btn-s" onclick="closeModal('modal-confirm')">Cancelar</button>
     </div>
   </div>
 </div>
 
-<!-- ===================== SCRIPT ===================== -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithPopup, signInWithCredential, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-// ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
-const CFG_MP = {
-  apiKey: "AIzaSyDev8spgKoKZi2pOohmk0r9SFLtLMcePa8",
-  authDomain: "estoque-b50df.firebaseapp.com",
-  projectId: "estoque-b50df",
-  storageBucket: "estoque-b50df.firebasestorage.app",
-  messagingSenderId: "634756791567",
-  appId: "1:634756791567:web:993e61243b57b7e057d27a"
-};
-const CFG_PA = {
-  apiKey: "AIzaSyB8qJQ-qTQGEWo1iA_NW_3VY-18jVOZxbM",
-  authDomain: "expedicao-8d1f0.firebaseapp.com",
-  projectId: "expedicao-8d1f0",
-  storageBucket: "expedicao-8d1f0.firebasestorage.app",
-  messagingSenderId: "247941256162",
-  appId: "1:247941256162:web:0904e8b7a404e9f1bd9fbb"
-};
-
-const appMP = initializeApp(CFG_MP, 'estoqueMP');
-const appPA = initializeApp(CFG_PA, 'expedicao');
-const authMP = getAuth(appMP);
-const authPA = getAuth(appPA);
-const dbMP = getFirestore(appMP);
-const dbPA = getFirestore(appPA);
+// ── FIREBASE ──────────────────────────────────────────────────────────────────
+const appMP = initializeApp({
+  apiKey:"AIzaSyDev8spgKoKZi2pOohmk0r9SFLtLMcePa8",authDomain:"estoque-b50df.firebaseapp.com",
+  projectId:"estoque-b50df",storageBucket:"estoque-b50df.firebasestorage.app",
+  messagingSenderId:"634756791567",appId:"1:634756791567:web:993e61243b57b7e057d27a"
+},'estoqueMP');
+const appPA = initializeApp({
+  apiKey:"AIzaSyB8qJQ-qTQGEWo1iA_NW_3VY-18jVOZxbM",authDomain:"expedicao-8d1f0.firebaseapp.com",
+  projectId:"expedicao-8d1f0",storageBucket:"expedicao-8d1f0.firebasestorage.app",
+  messagingSenderId:"247941256162",appId:"1:247941256162:web:0904e8b7a404e9f1bd9fbb"
+},'expedicao');
+const authMP = getAuth(appMP), authPA = getAuth(appPA);
+const dbMP = getFirestore(appMP), dbPA = getFirestore(appPA);
 const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
+provider.setCustomParameters({ prompt:'select_account' });
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
-let currentUser = null;
-let masterUid = null;
-let localInventory = [];   // from Expedi-o
-let localBatches = [];     // from Expedi-o
-let localEstoque = [];     // from expedicao
-let unsubInventory = null;
-let unsubBatches = null;
-let unsubEstoque = null;
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentUser = null, masterUid = null;
+let localInventory=[], localBatches=[], localRecipes=[], localEstoque=[];
+let unsubInv=null, unsubBat=null, unsubRec=null, unsubEst=null;
+let linhas=[], funcionarios=[], ordens=[], config={diasAlertaMP:7,diasAlertaPA:3,masterUid:'',consumoDiario:{}};
+let mpFilter='all', paFilter='all', opFilter='all';
 
-// PCP local data
-let linhas = [];
-let funcionarios = [];
-let ordens = [];
-let config = { diasAlertaMP: 7, diasAlertaPA: 3, masterUid: '' };
-
-// Filter state
-let mpFilter = 'all';
-let paFilter = 'all';
-let opFilter = 'all';
-
-// ─── DEFAULTS ─────────────────────────────────────────────────────────────────
 const DEFAULT_LINHAS = [
-  {
-    id: 'variedades',
-    nome: 'Linha Pães Variedades',
-    descricao: 'Pão francês, bisnaga, hot dog, forma e similares',
-    tempoBatelada: 20,
-    capacidadeBatelada: 60,
-    funcionariosMinimos: 3,
-    tempoSetup: 10,
-    ativa: true
-  },
-  {
-    id: 'helicoidal',
-    nome: 'Linha Helicoidal',
-    descricao: 'Misturador helicoidal — massas especiais e baguetes',
-    tempoBatelada: 25,
-    capacidadeBatelada: 80,
-    funcionariosMinimos: 2,
-    tempoSetup: 15,
-    ativa: true
-  }
+  {id:'variedades',nome:'Linha Pães Variedades',descricao:'Pão francês, bisnaga, hot dog, forma e similares',tempoBatelada:20,capacidadeBatelada:60,funcionariosMinimos:3,tempoSetup:10,ativa:true},
+  {id:'helicoidal',nome:'Linha Helicoidal',descricao:'Misturador helicoidal — massas especiais e baguetes',tempoBatelada:25,capacidadeBatelada:80,funcionariosMinimos:2,tempoSetup:15,ativa:true}
 ];
 
-// ─── UTILS ────────────────────────────────────────────────────────────────────
+// ── UTILS ─────────────────────────────────────────────────────────────────────
 const el = id => document.getElementById(id);
-const show = e => { if(e) { e.style.display=''; e.classList.remove('hidden'); } };
-const hide = e => { if(e) { e.style.display='none'; e.classList.add('hidden'); } };
-const uid = () => '_' + Math.random().toString(36).substr(2, 9);
+const show = e => e && (e.style.display='',e.classList.remove('hidden'));
+const hide = e => e && (e.style.display='none',e.classList.add('hidden'));
+const uid = () => '_'+Math.random().toString(36).substr(2,9);
 
-function showNotif(msg, isErr=false) {
-  const n = el('notif');
-  n.textContent = msg;
-  n.className = `show ${isErr ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`;
-  n.style.display = 'block';
-  setTimeout(() => { n.style.display='none'; n.classList.remove('show'); }, 3500);
+function showNotif(msg,err=false){
+  const n=el('notif'); n.textContent=msg;
+  n.className=`show ${err?'bg-red-500':'bg-emerald-500'} text-white`;
+  n.style.display='block';
+  setTimeout(()=>{n.style.display='none';n.classList.remove('show');},3500);
 }
 
-function daysUntil(dateStr) {
-  if(!dateStr) return null;
-  // Handle DD/MM/YYYY and YYYY-MM-DD
+function daysUntil(ds){
+  if(!ds) return null;
   let d;
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [dd,mm,yyyy] = dateStr.split('/');
-    d = new Date(`${yyyy}-${mm}-${dd}`);
-  } else {
-    d = new Date(dateStr);
-  }
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(ds)){const[dd,mm,yy]=ds.split('/');d=new Date(`${yy}-${mm}-${dd}`);}
+  else d=new Date(ds);
   if(isNaN(d)) return null;
-  const now = new Date(); now.setHours(0,0,0,0);
-  d.setHours(0,0,0,0);
-  return Math.ceil((d - now) / 86400000);
+  const now=new Date(); now.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  return Math.ceil((d-now)/86400000);
 }
 
-function formatDate(dateStr) {
-  if(!dateStr) return '--';
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
-  const d = new Date(dateStr + 'T00:00:00');
-  if(isNaN(d)) return dateStr;
-  return d.toLocaleDateString('pt-BR');
+function fmtDate(ds){
+  if(!ds) return '--';
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(ds)) return ds;
+  const d=new Date(ds+'T00:00:00'); return isNaN(d)?ds:d.toLocaleDateString('pt-BR');
 }
 
-function statusBadge(days, warnDays=7) {
-  if(days === null) return '<span class="badge badge-gray">Sem data</span>';
-  if(days < 0) return `<span class="badge badge-danger"><i class="fa-solid fa-skull-crossbones"></i> Vencido (${Math.abs(days)}d)</span>`;
-  if(days === 0) return `<span class="badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> Vence hoje!</span>`;
-  if(days <= warnDays) return `<span class="badge badge-warn"><i class="fa-solid fa-clock"></i> ${days}d</span>`;
+function daysBadge(days,warn=7){
+  if(days===null) return '<span class="badge badge-gray">Sem data</span>';
+  if(days<0) return `<span class="badge badge-danger"><i class="fa-solid fa-skull-crossbones"></i> Vencido ${Math.abs(days)}d</span>`;
+  if(days===0) return '<span class="badge badge-danger">Vence HOJE</span>';
+  if(days<=warn) return `<span class="badge badge-warn"><i class="fa-solid fa-clock"></i> ${days}d</span>`;
   return `<span class="badge badge-ok"><i class="fa-solid fa-check"></i> ${days}d</span>`;
 }
 
-function stockBadge(current, minimum) {
-  if(!minimum || minimum <= 0) return '<span class="badge badge-gray">Sem mínimo</span>';
-  const pct = (current / minimum) * 100;
-  if(current <= 0) return '<span class="badge badge-danger"><i class="fa-solid fa-circle-xmark"></i> Zerado</span>';
-  if(current <= minimum) return '<span class="badge badge-danger"><i class="fa-solid fa-arrow-down"></i> Abaixo do mín.</span>';
-  if(pct <= 150) return '<span class="badge badge-warn"><i class="fa-solid fa-arrow-up"></i> Baixo</span>';
-  return '<span class="badge badge-ok"><i class="fa-solid fa-check"></i> OK</span>';
+function opBadge(s){
+  return {pendente:'<span class="badge badge-warn">Pendente</span>',em_andamento:'<span class="badge badge-info">Em andamento</span>',concluida:'<span class="badge badge-ok">Concluída</span>',cancelada:'<span class="badge badge-gray">Cancelada</span>'}[s]||'<span class="badge badge-gray">'+s+'</span>';
+}
+function prioBadge(p){
+  return {normal:'<span class="badge badge-gray">Normal</span>',alta:'<span class="badge badge-warn">Alta</span>',urgente:'<span class="badge badge-danger">Urgente</span>'}[p]||'<span class="badge badge-gray">'+p+'</span>';
 }
 
-function opStatusBadge(status) {
-  const map = {
-    pendente: '<span class="badge badge-warn">Pendente</span>',
-    em_andamento: '<span class="badge badge-info">Em andamento</span>',
-    concluida: '<span class="badge badge-ok">Concluída</span>',
-    cancelada: '<span class="badge badge-gray">Cancelada</span>'
-  };
-  return map[status] || '<span class="badge badge-gray">' + status + '</span>';
+// ── CONSUMO & RISCO ───────────────────────────────────────────────────────────
+// Calcula consumo diário de um productId com base nas OPs planejadas (próx. 30 dias)
+// + consumo manual configurado
+function getConsumoDiario(productId) {
+  // Manual override
+  const manual = config.consumoDiario?.[productId];
+  if(manual > 0) return manual;
+
+  // From open OPs in the next 30 days
+  const ops = ordens.filter(o => o.status!=='concluida' && o.status!=='cancelada');
+  let total = 0, days = 30;
+  ops.forEach(op => {
+    const rec = localRecipes.find(r => r.id === op.receitaId);
+    if(!rec) return;
+    const ing = rec.ingredients?.find(i => i.productId === productId);
+    if(!ing) return;
+    total += ing.quantity * (op.bateladas||1);
+  });
+  return total > 0 ? total / days : 0;
 }
 
-function prioridadeBadge(p) {
-  const map = {
-    normal: '<span class="badge badge-gray">Normal</span>',
-    alta: '<span class="badge badge-warn">Alta</span>',
-    urgente: '<span class="badge badge-danger">Urgente</span>'
-  };
-  return map[p] || '<span class="badge badge-gray">' + p + '</span>';
-}
+// Para cada lote, calcula o risco real de vencimento
+function calcBatchRisk(batch, productId) {
+  const consumo = getConsumoDiario(productId);
+  const diasVenc = daysUntil(batch.expiryDate);
+  if(diasVenc === null) return { tipo:'sem_data', consumo:0, cobertura:null, sobra:null };
 
-// ─── LOCAL STORAGE ────────────────────────────────────────────────────────────
-function loadLocal() {
-  try {
-    linhas = JSON.parse(localStorage.getItem('pcp_linhas') || 'null') || DEFAULT_LINHAS;
-    funcionarios = JSON.parse(localStorage.getItem('pcp_funcionarios') || '[]');
-    ordens = JSON.parse(localStorage.getItem('pcp_ordens') || '[]');
-    const savedCfg = JSON.parse(localStorage.getItem('pcp_config') || '{}');
-    config = { ...config, ...savedCfg };
-  } catch(e) {
-    linhas = DEFAULT_LINHAS;
-    funcionarios = [];
-    ordens = [];
+  if(consumo <= 0) {
+    // Sem dados de consumo — só mostra validade
+    if(diasVenc < 0) return { tipo:'vencido', consumo:0, cobertura:null, sobra:null };
+    if(diasVenc <= (config.diasAlertaMP||7)) return { tipo:'vencendo', consumo:0, cobertura:null, sobra:null };
+    return { tipo:'ok', consumo:0, cobertura:null, sobra:null };
   }
+
+  const cobertura = batch.quantity / consumo; // dias para consumir este lote
+  const sobra = batch.quantity - (consumo * diasVenc); // kg que vão sobrar quando vencer
+
+  if(diasVenc < 0) return { tipo:'vencido', consumo, cobertura, sobra:batch.quantity };
+  if(sobra > 0.5) return { tipo:'perda', consumo, cobertura: Math.round(cobertura), sobra: Math.round(sobra) };
+  if(cobertura < 3) return { tipo:'ruptura', consumo, cobertura: Math.round(cobertura), sobra:0 };
+  if(diasVenc <= (config.diasAlertaMP||7)) return { tipo:'vencendo', consumo, cobertura: Math.round(cobertura), sobra:0 };
+  return { tipo:'ok', consumo, cobertura: Math.round(cobertura), sobra:0 };
 }
 
-function saveLinhas() { localStorage.setItem('pcp_linhas', JSON.stringify(linhas)); }
-function saveFuncionarios() { localStorage.setItem('pcp_funcionarios', JSON.stringify(funcionarios)); }
-function saveOrdens() { localStorage.setItem('pcp_ordens', JSON.stringify(ordens)); }
-function saveCfg() { localStorage.setItem('pcp_config', JSON.stringify(config)); }
+function riscoBadge(tipo, sobra, cobertura) {
+  if(tipo==='vencido') return '<span class="risco-badge risco-perda"><i class="fa-solid fa-skull-crossbones"></i> Vencido</span>';
+  if(tipo==='perda') return `<span class="risco-badge risco-perda"><i class="fa-solid fa-fire"></i> Vai perder ~${sobra}kg</span>`;
+  if(tipo==='ruptura') return `<span class="risco-badge risco-ruptura"><i class="fa-solid fa-triangle-exclamation"></i> Ruptura em ${cobertura}d</span>`;
+  if(tipo==='vencendo') return '<span class="risco-badge risco-ruptura"><i class="fa-solid fa-clock"></i> Vencendo</span>';
+  if(tipo==='ok') return '<span class="risco-badge risco-ok"><i class="fa-solid fa-check"></i> OK</span>';
+  return '<span class="risco-badge" style="background:#f1f5f9;color:#64748b">Sem dados</span>';
+}
 
-// ─── FIREBASE LISTENERS ───────────────────────────────────────────────────────
-async function resolveUid(user) {
-  const cfgUid = config.masterUid || el('cfg-master-uid')?.value?.trim();
+// ── LOCAL STORAGE ─────────────────────────────────────────────────────────────
+function loadLocal(){
+  try{
+    linhas=JSON.parse(localStorage.getItem('pcp_linhas')||'null')||DEFAULT_LINHAS;
+    funcionarios=JSON.parse(localStorage.getItem('pcp_funcionarios')||'[]');
+    ordens=JSON.parse(localStorage.getItem('pcp_ordens')||'[]');
+    const c=JSON.parse(localStorage.getItem('pcp_config')||'{}');
+    config={...config,...c};
+  }catch(e){linhas=DEFAULT_LINHAS;funcionarios=[];ordens=[];}
+}
+const saveLinhas=()=>localStorage.setItem('pcp_linhas',JSON.stringify(linhas));
+const saveFuncs=()=>localStorage.setItem('pcp_funcionarios',JSON.stringify(funcionarios));
+const saveOrdens=()=>localStorage.setItem('pcp_ordens',JSON.stringify(ordens));
+const saveCfg=()=>localStorage.setItem('pcp_config',JSON.stringify(config));
+
+// ── FIREBASE LISTENERS ────────────────────────────────────────────────────────
+function setSyncStatus(s){
+  const d=el('sync-dot'),t=el('sync-text');
+  if(s==='ok'){d.className='w-2 h-2 rounded-full bg-emerald-500';t.textContent='Sincronizado';}
+  else if(s==='syncing'){d.className='w-2 h-2 rounded-full bg-amber-400 animate-pulse';t.textContent='Sincronizando...';}
+  else{d.className='w-2 h-2 rounded-full bg-red-500';t.textContent='Erro';}
+}
+
+async function resolveUid(user){
+  const cfgUid=config.masterUid||el('cfg-master-uid')?.value?.trim();
   if(cfgUid) return cfgUid;
-  // Try to read global_settings to find master UID
-  try {
-    const snap = await getDoc(doc(dbMP, 'global_settings', 'company_db'));
-    if(snap.exists() && snap.data().masterUid) return snap.data().masterUid;
-  } catch(e) {}
+  try{
+    const snap=await getDoc(doc(dbMP,'global_settings','company_db'));
+    if(snap.exists()&&snap.data().masterUid) return snap.data().masterUid;
+  }catch(e){}
   return user.uid;
 }
 
-function startListeners(uid) {
-  // Unsubscribe old
-  if(unsubInventory) unsubInventory();
-  if(unsubBatches) unsubBatches();
-  if(unsubEstoque) unsubEstoque();
-
+function startListeners(uid){
+  if(unsubInv)unsubInv(); if(unsubBat)unsubBat(); if(unsubRec)unsubRec();
   setSyncStatus('syncing');
 
-  // Inventory (matérias-primas)
-  const invCol = collection(dbMP, 'users', uid, 'inventory');
-  unsubInventory = onSnapshot(invCol, snap => {
-    localInventory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderMP();
-    renderDashboard();
+  unsubInv=onSnapshot(collection(dbMP,'users',uid,'inventory'),snap=>{
+    localInventory=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderMP(); renderDashboard(); renderCfgConsumo();
     setSyncStatus('ok');
-  }, err => {
-    console.error('inventory:', err);
-    el('mp-tbody').innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500"><i class="fa-solid fa-circle-exclamation mr-1"></i>Erro ao carregar MP: ${err.message}</td></tr>`;
-    setSyncStatus('error');
-  });
+  },err=>{ el('mp-tbody').innerHTML=`<tr><td colspan="8" class="text-center py-6 text-red-500">Erro MP: ${err.message}</td></tr>`; setSyncStatus('error'); });
 
-  // Batches (lotes de MP)
-  const batchCol = collection(dbMP, 'users', uid, 'batches');
-  unsubBatches = onSnapshot(batchCol, snap => {
-    localBatches = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(b => b.isReleased !== false);
-    renderMP();
-    renderDashboard();
-  }, err => console.error('batches:', err));
+  unsubBat=onSnapshot(collection(dbMP,'users',uid,'batches'),snap=>{
+    localBatches=snap.docs.map(d=>({id:d.id,...d.data()})).filter(b=>b.isReleased!==false);
+    renderMP(); renderDashboard();
+  },err=>console.error('batches:',err));
 
-  // Estoque PA
-  unsubEstoque = onSnapshot(collection(dbPA, 'estoque'), snap => {
-    localEstoque = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderPA();
-    renderDashboard();
-  }, err => {
-    el('pa-tbody').innerHTML = `<tr><td colspan="7" class="text-center py-6 text-amber-600"><i class="fa-solid fa-lock mr-1"></i>Sem acesso ao app de Expedição (${err.message})</td></tr>`;
-  });
+  unsubRec=onSnapshot(collection(dbMP,'users',uid,'recipes'),snap=>{
+    localRecipes=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderReceitas(); populateReceitasSelect();
+  },err=>{ el('receitas-grid').innerHTML=`<p class="col-span-3 text-center text-red-500 py-6">Erro ao carregar fichas: ${err.message}</p>`; });
 }
 
-function setSyncStatus(state) {
-  const dot = el('sync-dot');
-  const txt = el('sync-text');
-  if(state==='ok') { dot.className='w-2 h-2 rounded-full bg-emerald-500'; txt.textContent='Sincronizado'; }
-  else if(state==='syncing') { dot.className='w-2 h-2 rounded-full bg-amber-400 animate-pulse'; txt.textContent='Sincronizando...'; }
-  else { dot.className='w-2 h-2 rounded-full bg-red-500'; txt.textContent='Erro'; }
+function startPAListener(){
+  if(unsubEst) return;
+  unsubEst=onSnapshot(collection(dbPA,'estoque'),snap=>{
+    localEstoque=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderPA(); renderDashboard();
+  },err=>{ el('pa-tbody').innerHTML=`<tr><td colspan="7" class="text-center py-6 text-amber-600"><i class="fa-solid fa-lock mr-1"></i>Sem acesso à Expedição: ${err.message}</td></tr>`; });
 }
 
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
-el('btn-login').addEventListener('click', async () => {
-  el('btn-login').disabled = true;
-  el('btn-login').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Entrando...';
-  try {
-    const result = await signInWithPopup(authMP, provider);
-    // Try to sign into expedicao with same credential
-    try {
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      await signInWithCredential(authPA, credential);
-    } catch(e) {
-      console.warn('expedicao auth secondary failed:', e.message);
-    }
-  } catch(e) {
-    el('login-error').textContent = 'Erro: ' + e.message;
-    show(el('login-error'));
-    el('btn-login').disabled = false;
-    el('btn-login').innerHTML = '<i class="fa-brands fa-google"></i> Entrar com Google';
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+el('btn-login').addEventListener('click',async()=>{
+  el('btn-login').disabled=true;
+  el('btn-login').innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Entrando...';
+  try{
+    const result=await signInWithPopup(authMP,provider);
+    try{ await signInWithCredential(authPA,GoogleAuthProvider.credentialFromResult(result)); }
+    catch(e){ console.warn('expedicao secondary auth:',e.message); }
+  }catch(e){
+    el('login-error').textContent='Erro: '+e.message; show(el('login-error'));
+    el('btn-login').disabled=false; el('btn-login').innerHTML='<i class="fa-brands fa-google"></i> Entrar com Google';
   }
 });
 
-el('btn-logout').addEventListener('click', async () => {
-  if(unsubInventory) unsubInventory();
-  if(unsubBatches) unsubBatches();
-  if(unsubEstoque) unsubEstoque();
-  await signOut(authMP);
-  try { await signOut(authPA); } catch(e) {}
-  hide(el('app-screen'));
-  show(el('login-screen'));
+el('btn-logout').addEventListener('click',async()=>{
+  [unsubInv,unsubBat,unsubRec,unsubEst].forEach(u=>u&&u());
+  await signOut(authMP); try{await signOut(authPA);}catch(e){}
+  hide(el('app-screen')); show(el('login-screen'));
 });
 
-onAuthStateChanged(authMP, async user => {
-  if(user) {
-    currentUser = user;
-    hide(el('login-screen'));
-    show(el('app-screen'));
+onAuthStateChanged(authMP,async user=>{
+  if(user){
+    currentUser=user;
+    hide(el('login-screen')); show(el('app-screen'));
     loadLocal();
-    masterUid = await resolveUid(user);
+    masterUid=await resolveUid(user);
     startListeners(masterUid);
     initUI();
-  } else {
-    currentUser = null;
-    hide(el('app-screen'));
-    show(el('login-screen'));
-    el('btn-login').disabled = false;
-    el('btn-login').innerHTML = '<i class="fa-brands fa-google"></i> Entrar com Google';
+  }else{
+    currentUser=null;
+    hide(el('app-screen')); show(el('login-screen'));
+    el('btn-login').disabled=false;
+    el('btn-login').innerHTML='<i class="fa-brands fa-google"></i> Entrar com Google';
   }
 });
 
-// Also listen for expedicao auth changes
-onAuthStateChanged(authPA, user => {
-  if(user && unsubEstoque === null) {
-    unsubEstoque = onSnapshot(collection(dbPA, 'estoque'), snap => {
-      localEstoque = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderPA();
-      renderDashboard();
-    }, err => console.error('estoque PA:', err));
-  }
+onAuthStateChanged(authPA,user=>{
+  if(user&&!unsubEst) startPAListener();
 });
 
-// ─── NAV ──────────────────────────────────────────────────────────────────────
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  const s = el('screen-' + name);
-  if(s) s.classList.add('active');
-  const nb = document.querySelector(`.nav-item[data-screen="${name}"]`);
-  if(nb) nb.classList.add('active');
-  window.scrollTo(0, 0);
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  el('screen-'+name)?.classList.add('active');
+  document.querySelector(`.nav-item[data-s="${name}"]`)?.classList.add('active');
+  window.scrollTo(0,0);
   if(name==='linhas') renderLinhas();
   if(name==='equipe') renderEquipe();
   if(name==='ordens') renderOrdens();
   if(name==='nova-op') initNovaOP();
   if(name==='home') renderDashboard();
+  if(name==='receitas') renderReceitas();
+  if(name==='config') renderCfgConsumo();
 }
-window.showScreen = showScreen;
+window.showScreen=showScreen;
+document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.s)));
 
-document.querySelectorAll('.nav-item').forEach(btn => {
-  btn.addEventListener('click', () => showScreen(btn.dataset.screen));
-});
-
-// ─── INIT UI ──────────────────────────────────────────────────────────────────
-function initUI() {
-  // Date header
-  const now = new Date();
-  el('header-date').textContent = now.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
-  el('dash-greeting').textContent = `Olá, ${currentUser.displayName?.split(' ')[0] || 'usuário'}! Aqui está o resumo do dia.`;
-
-  // Config fields
-  el('cfg-dias-mp').value = config.diasAlertaMP;
-  el('cfg-dias-pa').value = config.diasAlertaPA;
-  el('cfg-master-uid').value = config.masterUid || '';
-
-  // Today's date for OP form
-  el('op-data').value = now.toISOString().split('T')[0];
-
-  renderDashboard();
-  renderLinhas();
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function initUI(){
+  const now=new Date();
+  el('header-date').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  el('dash-greeting').textContent=`Olá, ${currentUser.displayName?.split(' ')[0]||'usuário'}!`;
+  el('cfg-dias-mp').value=config.diasAlertaMP;
+  el('cfg-dias-pa').value=config.diasAlertaPA;
+  el('cfg-master-uid').value=config.masterUid||'';
+  el('op-data').value=now.toISOString().split('T')[0];
+  renderDashboard(); renderLinhas();
 }
 
-// ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function renderDashboard() {
-  const warnDaysMP = config.diasAlertaMP || 7;
-  const warnDaysPA = config.diasAlertaPA || 3;
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const openOps=ordens.filter(o=>o.status!=='concluida'&&o.status!=='cancelada');
+  const present=funcionarios.filter(f=>f.status==='presente');
 
-  // MP alerts
-  const mpAlerts = getMPAlerts(warnDaysMP);
-  const paAlerts = getPAAlerts(warnDaysPA);
-  const openOps = ordens.filter(o => o.status !== 'concluida' && o.status !== 'cancelada');
-  const presentTeam = funcionarios.filter(f => f.status === 'presente');
+  // Contagem de riscos MP
+  const batchMap={};
+  localBatches.forEach(b=>{if(!batchMap[b.productId])batchMap[b.productId]=[];batchMap[b.productId].push(b);});
+  let mpRisks=0;
+  Object.entries(batchMap).forEach(([pid,batches])=>{
+    batches.forEach(b=>{ const r=calcBatchRisk(b,pid); if(r.tipo==='perda'||r.tipo==='ruptura'||r.tipo==='vencido') mpRisks++; });
+  });
 
-  // KPIs
-  el('kpi-ops').textContent = openOps.length;
-  el('kpi-mp-alerts').textContent = mpAlerts.length;
-  el('kpi-pa-alerts').textContent = paAlerts.length;
-  el('kpi-team').textContent = presentTeam.length;
-  el('kpi-team-sub').textContent = `de ${funcionarios.length} cadastrados`;
+  const wPA=config.diasAlertaPA||3;
+  const paRisks=localEstoque.filter(i=>{ const d=daysUntil(i.validade); return d!==null&&d<=wPA; }).length;
 
-  // MP alerts panel
-  const mpDiv = el('dash-mp-alerts');
-  if(mpAlerts.length === 0) {
-    mpDiv.innerHTML = '<p class="text-emerald-600 text-sm flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sem alertas no momento.</p>';
-  } else {
-    mpDiv.innerHTML = mpAlerts.slice(0,8).map(a => `
-      <div class="alert-row ${a.type}">
-        <i class="fa-solid ${a.icon} text-${a.color} mt-0.5 w-4"></i>
-        <div class="min-w-0">
-          <p class="font-semibold text-slate-800 text-sm truncate">${a.title}</p>
-          <p class="text-slate-500 text-xs">${a.msg}</p>
-        </div>
-      </div>`).join('');
-  }
+  el('kpi-ops').textContent=openOps.length;
+  el('kpi-mp').textContent=mpRisks;
+  el('kpi-pa').textContent=paRisks;
+  el('kpi-team').textContent=present.length;
+  el('kpi-team-sub').textContent=`de ${funcionarios.length} cadastrados`;
 
-  // PA alerts panel
-  const paDiv = el('dash-pa-alerts');
-  if(paAlerts.length === 0) {
-    paDiv.innerHTML = '<p class="text-emerald-600 text-sm flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sem alertas no momento.</p>';
-  } else {
-    paDiv.innerHTML = paAlerts.slice(0,8).map(a => `
-      <div class="alert-row ${a.type}">
-        <i class="fa-solid ${a.icon} text-${a.color} mt-0.5 w-4"></i>
-        <div class="min-w-0">
-          <p class="font-semibold text-slate-800 text-sm truncate">${a.title}</p>
-          <p class="text-slate-500 text-xs">${a.msg}</p>
-        </div>
-      </div>`).join('');
-  }
+  // MP risks list
+  const mpDiv=el('dash-mp-alerts');
+  const mpAlerts=[];
+  Object.entries(batchMap).forEach(([pid,batches])=>{
+    const prod=localInventory.find(i=>i.id===pid);
+    batches.forEach(b=>{
+      const r=calcBatchRisk(b,pid);
+      if(r.tipo==='perda') mpAlerts.push({tipo:'danger',icon:'fa-fire',title:prod?.name||pid,msg:`Lote ${b.code} — vai perder ~${r.sobra}kg. Vence em ${daysUntil(b.expiryDate)}d, consumo ${r.consumo.toFixed(1)}kg/dia`});
+      else if(r.tipo==='vencido') mpAlerts.push({tipo:'danger',icon:'fa-skull-crossbones',title:prod?.name||pid,msg:`Lote ${b.code} — VENCIDO`});
+      else if(r.tipo==='ruptura') mpAlerts.push({tipo:'warn',icon:'fa-triangle-exclamation',title:prod?.name||pid,msg:`Lote ${b.code} — ruptura em ${r.cobertura}d (consumo ${r.consumo.toFixed(1)}kg/dia)`});
+      else if(r.tipo==='vencendo') mpAlerts.push({tipo:'warn',icon:'fa-clock',title:prod?.name||pid,msg:`Lote ${b.code} — vence em ${daysUntil(b.expiryDate)}d`});
+    });
+    // Stock minimum
+    const inv=localInventory.find(i=>i.id===pid);
+    if(inv&&inv.minStock>0&&(inv.totalQuantity||0)<=inv.minStock){
+      mpAlerts.push({tipo:'danger',icon:'fa-arrow-down',title:inv.name,msg:`Estoque ${inv.totalQuantity||0} ≤ mínimo ${inv.minStock}`});
+    }
+  });
+  mpDiv.innerHTML=mpAlerts.length
+    ?mpAlerts.slice(0,8).map(a=>`<div class="arow ${a.tipo}"><i class="fa-solid ${a.icon} text-${a.tipo==='danger'?'red':'amber'}-500 mt-0.5 w-4 shrink-0"></i><div class="min-w-0"><p class="font-semibold text-sm truncate">${a.title}</p><p class="text-slate-500 text-xs">${a.msg}</p></div></div>`).join('')
+    :'<p class="text-emerald-600 text-sm flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sem riscos no momento.</p>';
 
-  // Active OPs
-  const opsDiv = el('dash-ops-list');
-  if(openOps.length === 0) {
-    opsDiv.innerHTML = '<p class="text-slate-400 text-sm text-center py-3">Nenhuma OP aberta.</p>';
-  } else {
-    opsDiv.innerHTML = openOps.slice(0,5).map(op => {
-      const linha = linhas.find(l => l.id === op.linhaId);
-      return `
-        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl mb-2 cursor-pointer hover:bg-slate-100" onclick="openOPDetail('${op.id}')">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
-              <i class="fa-solid fa-clipboard-list text-brand-600 text-sm"></i>
-            </div>
-            <div>
-              <p class="font-semibold text-slate-800 text-sm">${op.produto}</p>
-              <p class="text-slate-500 text-xs">${linha?.nome || op.linhaId} · ${op.quantidade}kg · ${formatDate(op.data)}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            ${opStatusBadge(op.status)}
-            ${prioridadeBadge(op.prioridade)}
-          </div>
-        </div>`;
+  // PA alerts
+  const paDiv=el('dash-pa-alerts');
+  const paAlerts=localEstoque.filter(i=>{ const d=daysUntil(i.validade); return d!==null&&d<=(config.diasAlertaPA||3); })
+    .sort((a,b)=>daysUntil(a.validade)-daysUntil(b.validade));
+  paDiv.innerHTML=paAlerts.length
+    ?paAlerts.slice(0,8).map(a=>{ const d=daysUntil(a.validade); return `<div class="arow ${d<0?'danger':'warn'}"><i class="fa-solid ${d<0?'fa-skull-crossbones':'fa-clock'} text-${d<0?'red':'amber'}-500 mt-0.5 w-4 shrink-0"></i><div class="min-w-0"><p class="font-semibold text-sm truncate">${a.nome||'--'}</p><p class="text-slate-500 text-xs">Lote ${a.lote||'--'} · ${d<0?`Vencido há ${Math.abs(d)}d`:`Vence em ${d}d`} · ${fmtDate(a.validade)}</p></div></div>`; }).join('')
+    :'<p class="text-emerald-600 text-sm flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sem alertas no momento.</p>';
+
+  // OPs
+  const opsDiv=el('dash-ops');
+  opsDiv.innerHTML=openOps.length
+    ?openOps.slice(0,5).map(op=>{ const l=linhas.find(x=>x.id===op.linhaId); return `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl mb-2 cursor-pointer hover:bg-slate-100" onclick="openOPDetail('${op.id}')"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center"><i class="fa-solid fa-clipboard-list text-brand-600 text-sm"></i></div><div><p class="font-semibold text-sm">${op.produto}</p><p class="text-slate-400 text-xs">${l?.nome||op.linhaId} · ${op.quantidade}kg · ${fmtDate(op.data)}</p></div></div><div class="flex gap-1">${opBadge(op.status)}${prioBadge(op.prioridade)}</div></div>`; }).join('')
+    :'<p class="text-slate-400 text-sm text-center py-3">Nenhuma OP aberta.</p>';
+}
+
+// ── MATÉRIAS-PRIMAS ───────────────────────────────────────────────────────────
+function renderMP(){
+  const tbody=el('mp-tbody');
+  if(!localInventory.length){ tbody.innerHTML='<tr><td colspan="8" class="text-center py-8 text-slate-400">Nenhum item no estoque MP.</td></tr>'; return; }
+
+  const batchMap={};
+  localBatches.forEach(b=>{ if(!batchMap[b.productId])batchMap[b.productId]=[]; batchMap[b.productId].push(b); });
+
+  const rows=[];
+  localInventory.forEach(inv=>{
+    const batches=(batchMap[inv.id]||[]).sort((a,b)=>new Date(a.expiryDate||'9999')-new Date(b.expiryDate||'9999'));
+    if(batches.length===0){
+      // Show item without batches
+      const rowFilter='ok';
+      if(mpFilter!=='all'&&mpFilter!==rowFilter) return;
+      rows.push(`<tr><td><p class="font-semibold">${inv.name}</p><p class="text-slate-400 text-xs">${inv.supplier||''}</p></td><td>${inv.totalQuantity||0}</td><td>${inv.minStock||'–'}</td><td colspan="4" class="text-slate-400 text-xs">Sem lotes registrados</td><td></td></tr>`);
+    } else {
+      batches.forEach((b,idx)=>{
+        const risk=calcBatchRisk(b,inv.id);
+        const rowFilter=risk.tipo==='perda'||risk.tipo==='vencido'?'perda':risk.tipo==='ruptura'?'ruptura':risk.tipo==='vencendo'?'vencendo':'ok';
+        if(mpFilter!=='all'&&mpFilter!==rowFilter) return;
+        const days=daysUntil(b.expiryDate);
+        const cobStr=risk.cobertura!==null?`${risk.cobertura}d`:'–';
+        const cnsStr=risk.consumo>0?`${risk.consumo.toFixed(1)} kg/d`:'–';
+        rows.push(`<tr>
+          ${idx===0?`<td rowspan="${batches.length}"><p class="font-semibold">${inv.name}</p><p class="text-slate-400 text-xs">${inv.supplier||''}</p></td><td rowspan="${batches.length}"><p class="font-semibold">${inv.totalQuantity||0}</p>${inv.minStock>0?`<div class="pb mt-1 w-16"><div class="pf ${(inv.totalQuantity||0)<=inv.minStock?'bg-red-400':'bg-emerald-500'}" style="width:${Math.min(100,((inv.totalQuantity||0)/inv.minStock)*50)}%"></div></div>`:''}</td><td rowspan="${batches.length}">${inv.minStock||'–'}</td>`:''}
+          <td><span class="font-mono text-xs">${b.code}</span><br><span class="text-slate-400 text-xs">${b.quantity}kg</span></td>
+          <td>${fmtDate(b.expiryDate)}</td>
+          <td>${days!==null?days:'–'}</td>
+          <td>${cnsStr}</td>
+          <td>${cobStr}</td>
+          <td>${riscoBadge(risk.tipo,risk.sobra,risk.cobertura)}</td>
+        </tr>`);
+      });
+    }
+  });
+  tbody.innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" class="text-center py-8 text-slate-400">Nenhum item neste filtro.</td></tr>';
+}
+
+document.querySelectorAll('.mp-f').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.mp-f').forEach(x=>{x.className=x.className.replace('btn-p','btn-s');});
+  b.className=b.className.replace('btn-s','btn-p');
+  mpFilter=b.dataset.f; renderMP();
+}));
+el('btn-mp-refresh')?.addEventListener('click',()=>{ if(masterUid)startListeners(masterUid); });
+
+// ── PRODUTOS ACABADOS ─────────────────────────────────────────────────────────
+function renderPA(){
+  const tbody=el('pa-tbody');
+  if(!localEstoque.length){ tbody.innerHTML='<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhum produto acabado.</td></tr>'; return; }
+  const warn=config.diasAlertaPA||3;
+  const rows=localEstoque.map(item=>{
+    const d=daysUntil(item.validade);
+    const st=d===null?'ok':d<0?'danger':d<=warn?'warn':'ok';
+    if(paFilter!=='all'&&paFilter!==st) return '';
+    return `<tr><td><p class="font-semibold">${item.nome||'--'}</p></td><td><span class="text-xs text-slate-500">${item.setor||'--'}</span></td><td><span class="font-mono text-xs">${item.lote||'--'}</span></td><td>${item.qtd??'--'} ${item.und||''}</td><td>${fmtDate(item.validade)}</td><td>${d??'--'}</td><td>${daysBadge(d,warn)}</td></tr>`;
+  }).filter(Boolean);
+  tbody.innerHTML=rows.length?rows.join(''):'<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhum item neste filtro.</td></tr>';
+}
+
+document.querySelectorAll('.pa-f').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.pa-f').forEach(x=>x.className=x.className.replace('btn-p','btn-s'));
+  b.className=b.className.replace('btn-s','btn-p');
+  paFilter=b.dataset.f; renderPA();
+}));
+
+// ── RECEITAS / FICHAS TÉCNICAS ────────────────────────────────────────────────
+function renderReceitas(){
+  const grid=el('receitas-grid');
+  const q=(el('rec-search')?.value||'').toLowerCase();
+  const list=localRecipes.filter(r=>!q||r.name?.toLowerCase().includes(q));
+  if(!list.length){ grid.innerHTML='<p class="col-span-3 text-slate-400 text-sm text-center py-8">Nenhuma ficha técnica encontrada.</p>'; return; }
+
+  grid.innerHTML=list.map(r=>{
+    const ings=(r.ingredients||[]).map(i=>{
+      const inv=localInventory.find(x=>x.id===i.productId);
+      return `<li class="flex justify-between text-xs py-0.5 border-b border-slate-100"><span>${inv?.name||i.productId}</span><span class="font-semibold text-slate-700">${i.quantity} kg</span></li>`;
     }).join('');
-  }
-}
-
-function getMPAlerts(warnDays) {
-  const alerts = [];
-  // Batch expiry alerts
-  localBatches.forEach(b => {
-    const days = daysUntil(b.expiryDate);
-    if(days !== null && days <= warnDays) {
-      const prod = localInventory.find(i => i.id === b.productId);
-      const type = days < 0 ? 'danger' : (days <= 2 ? 'danger' : 'warn');
-      alerts.push({
-        type, icon: days<0 ? 'fa-skull-crossbones' : 'fa-clock', color: days<0 ? 'red-500' : 'amber-500',
-        title: prod?.name || b.code,
-        msg: days < 0 ? `Vencido há ${Math.abs(days)} dia(s) — Lote: ${b.code}` : `Vence em ${days} dia(s) — Lote: ${b.code} · ${formatDate(b.expiryDate)}`
-      });
-    }
-  });
-  // Stock minimum alerts
-  localInventory.forEach(i => {
-    const stock = i.totalQuantity || 0;
-    const min = i.minStock || 0;
-    if(min > 0 && stock <= min) {
-      alerts.push({
-        type: stock <= 0 ? 'danger' : 'warn',
-        icon: stock <= 0 ? 'fa-circle-xmark' : 'fa-arrow-down',
-        color: stock <= 0 ? 'red-500' : 'amber-500',
-        title: i.name,
-        msg: `Estoque: ${stock} (mín: ${min})`
-      });
-    }
-  });
-  return alerts;
-}
-
-function getPAAlerts(warnDays) {
-  const alerts = [];
-  localEstoque.forEach(item => {
-    const days = daysUntil(item.validade);
-    if(days !== null && days <= warnDays) {
-      const type = days < 0 ? 'danger' : (days <= 1 ? 'danger' : 'warn');
-      alerts.push({
-        type, icon: days<0 ? 'fa-skull-crossbones' : 'fa-clock', color: days<0 ? 'red-500' : 'amber-500',
-        title: item.nome || '--',
-        msg: days < 0 ? `Vencido há ${Math.abs(days)} dia(s) — Lote: ${item.lote||'--'}` : `Vence em ${days} dia(s) — Lote: ${item.lote||'--'} · ${formatDate(item.validade)}`
-      });
-    }
-  });
-  return alerts;
-}
-
-// ─── MATÉRIAS-PRIMAS ──────────────────────────────────────────────────────────
-function renderMP() {
-  const tbody = el('mp-tbody');
-  if(localInventory.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhum item no estoque de MP.</td></tr>';
-    return;
-  }
-  const warnDays = config.diasAlertaMP || 7;
-  const batchMap = {};
-  localBatches.forEach(b => {
-    if(!batchMap[b.productId]) batchMap[b.productId] = [];
-    batchMap[b.productId].push(b);
-  });
-
-  const rows = localInventory.map(item => {
-    const batches = (batchMap[item.id] || []).sort((a,b) => new Date(a.expiryDate||'9999-01-01') - new Date(b.expiryDate||'9999-01-01'));
-    const nextBatch = batches[0];
-    const days = nextBatch ? daysUntil(nextBatch.expiryDate) : null;
-    const stock = item.totalQuantity || 0;
-    const min = item.minStock || 0;
-
-    let rowStatus = 'ok';
-    if(stock <= 0 || (days !== null && days < 0)) rowStatus = 'danger';
-    else if((min > 0 && stock <= min) || (days !== null && days <= warnDays)) rowStatus = 'warn';
-
-    if(mpFilter !== 'all' && mpFilter !== rowStatus) return '';
-
-    const typeLabel = { insumo:'Insumo', semi_acabado:'Semi-acabado' };
-    return `<tr>
-      <td><p class="font-semibold text-slate-800">${item.name}</p><p class="text-slate-400 text-xs">${item.supplier||''}</p></td>
-      <td><span class="badge badge-gray">${typeLabel[item.type]||item.type||'--'}</span></td>
-      <td>
-        <p class="font-semibold">${stock}</p>
-        ${min > 0 ? `<div class="progress-bar mt-1 w-20"><div class="progress-fill ${stock<=min?'bg-red-400':(stock/min<=1.5?'bg-amber-400':'bg-emerald-500')}" style="width:${Math.min(100, (stock/min)*50)}%"></div></div>` : ''}
-      </td>
-      <td>${min || '–'}</td>
-      <td>${nextBatch ? formatDate(nextBatch.expiryDate) : '–'}</td>
-      <td>${nextBatch ? `<span class="font-mono text-xs text-slate-600">${nextBatch.code}</span>` : '–'}</td>
-      <td>
-        ${stockBadge(stock, min)}
-        ${days !== null ? statusBadge(days, warnDays) : ''}
-      </td>
-    </tr>`;
-  }).filter(Boolean);
-
-  tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhum item neste filtro.</td></tr>';
-}
-
-document.querySelectorAll('.mp-filter').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.mp-filter').forEach(b => b.classList.replace('btn-primary','btn-secondary'));
-    btn.classList.replace('btn-secondary','btn-primary');
-    mpFilter = btn.dataset.filter;
-    renderMP();
-  });
-});
-
-el('btn-mp-refresh')?.addEventListener('click', () => {
-  if(masterUid) startListeners(masterUid);
-  showNotif('Atualizando dados...');
-});
-
-// ─── PRODUTOS ACABADOS ────────────────────────────────────────────────────────
-function renderPA() {
-  const tbody = el('pa-tbody');
-  if(localEstoque.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhum produto no estoque de PA.</td></tr>';
-    return;
-  }
-  const warnDays = config.diasAlertaPA || 3;
-
-  const rows = localEstoque.map(item => {
-    const days = daysUntil(item.validade);
-    let rowStatus = 'ok';
-    if(days !== null && days < 0) rowStatus = 'danger';
-    else if(days !== null && days <= warnDays) rowStatus = 'warn';
-
-    if(paFilter !== 'all' && paFilter !== rowStatus) return '';
-
-    return `<tr>
-      <td><p class="font-semibold text-slate-800">${item.nome||'--'}</p></td>
-      <td><span class="text-slate-500 text-xs">${item.setor||'--'}</span></td>
-      <td><span class="font-mono text-xs text-slate-600">${item.lote||'--'}</span></td>
-      <td>${item.qtd ?? '--'} ${item.und||''}</td>
-      <td>${formatDate(item.validade)}</td>
-      <td>${days !== null ? days : '--'}</td>
-      <td>${statusBadge(days, warnDays)}</td>
-    </tr>`;
-  }).filter(Boolean);
-
-  tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhum item neste filtro.</td></tr>';
-}
-
-document.querySelectorAll('.pa-filter').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.pa-filter').forEach(b => b.classList.replace('btn-primary','btn-secondary'));
-    btn.classList.replace('btn-secondary','btn-primary');
-    paFilter = btn.dataset.filter;
-    renderPA();
-  });
-});
-
-el('btn-pa-refresh')?.addEventListener('click', () => showNotif('Dados PA atualizados em tempo real.'));
-
-// ─── LINHAS DE PRODUÇÃO ───────────────────────────────────────────────────────
-function renderLinhas() {
-  const container = el('linhas-list');
-  if(linhas.length === 0) {
-    container.innerHTML = '<p class="text-slate-400 col-span-2 text-center py-8">Nenhuma linha cadastrada.</p>';
-    return;
-  }
-  container.innerHTML = linhas.map(l => {
-    const colorClass = l.id === 'variedades' ? 'variedades' : l.id === 'helicoidal' ? 'helicoidal' : 'custom';
     return `
-    <div class="card p-5 line-card ${colorClass}">
-      <div class="flex items-start justify-between mb-2 pl-2">
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-800">${l.nome}</h3>
-          <p class="text-slate-400 text-xs mt-0.5">${l.descricao||''}</p>
+    <div class="card p-4 hover:shadow-md transition-shadow">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <h3 class="font-bold text-slate-800">${r.name}</h3>
+          <p class="text-xs text-slate-400">${r.category||'Sem categoria'} ${r.outputYield?`· Rendimento: ${r.outputYield}kg/bat`:''}</p>
         </div>
-        <div class="flex gap-1 ml-2">
-          <button class="btn btn-secondary btn-sm" onclick="editLinha('${l.id}')"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-danger btn-sm" onclick="deleteLinha('${l.id}')"><i class="fa-solid fa-trash"></i></button>
-        </div>
+        ${r.isSemi?'<span class="badge badge-purple">Semi-acabado</span>':'<span class="badge badge-info">Produto Final</span>'}
       </div>
-      <div class="grid grid-cols-2 gap-3 pl-2 mt-3">
-        <div class="bg-slate-50 rounded-lg p-3 text-center">
-          <p class="text-slate-400 text-xs">Tempo/Batelada</p>
-          <p class="text-xl font-bold text-slate-700">${l.tempoBatelada}<span class="text-sm font-normal">min</span></p>
-        </div>
-        <div class="bg-slate-50 rounded-lg p-3 text-center">
-          <p class="text-slate-400 text-xs">Cap./Batelada</p>
-          <p class="text-xl font-bold text-slate-700">${l.capacidadeBatelada}<span class="text-sm font-normal">kg</span></p>
-        </div>
-        <div class="bg-slate-50 rounded-lg p-3 text-center">
-          <p class="text-slate-400 text-xs">Func. Mínimos</p>
-          <p class="text-xl font-bold text-teal-600">${l.funcionariosMinimos}<span class="text-sm font-normal"> pessoas</span></p>
-        </div>
-        <div class="bg-slate-50 rounded-lg p-3 text-center">
-          <p class="text-slate-400 text-xs">Setup</p>
-          <p class="text-xl font-bold text-slate-700">${l.tempoSetup}<span class="text-sm font-normal">min</span></p>
-        </div>
-      </div>
+      ${ings?`<ul class="mt-2 space-y-0.5">${ings}</ul>`:'<p class="text-xs text-slate-400">Sem ingredientes.</p>'}
+      <button class="btn btn-p btn-sm w-full mt-3" onclick="showScreen('nova-op');setTimeout(()=>preselectReceita('${r.id}'),200)">
+        <i class="fa-solid fa-plus"></i> Usar nesta OP
+      </button>
     </div>`;
   }).join('');
 }
 
-window.editLinha = function(id) {
-  const l = linhas.find(x => x.id === id);
-  if(!l) return;
-  el('modal-linha-title').textContent = 'Editar Linha';
-  el('linha-id').value = l.id;
-  el('linha-nome').value = l.nome;
-  el('linha-descricao').value = l.descricao || '';
-  el('linha-tempo-batelada').value = l.tempoBatelada;
-  el('linha-capacidade').value = l.capacidadeBatelada;
-  el('linha-func-min').value = l.funcionariosMinimos;
-  el('linha-setup').value = l.tempoSetup;
-  openModal('modal-linha');
+window.preselectReceita=function(id){
+  el('op-receita').value=id;
+  el('op-receita').dispatchEvent(new Event('change'));
 };
 
-window.deleteLinha = function(id) {
-  confirmAction('Excluir Linha', 'Esta linha será removida. Ordens de produção vinculadas não serão afetadas.', () => {
-    linhas = linhas.filter(l => l.id !== id);
-    saveLinhas();
-    renderLinhas();
-    showNotif('Linha removida.');
-  });
-};
+el('rec-search')?.addEventListener('input',renderReceitas);
+el('btn-rec-refresh')?.addEventListener('click',()=>{ if(masterUid)startListeners(masterUid); });
 
-el('form-linha').addEventListener('submit', e => {
-  e.preventDefault();
-  const id = el('linha-id').value || uid();
-  const existing = linhas.find(l => l.id === id);
-  const entry = {
-    id,
-    nome: el('linha-nome').value.trim(),
-    descricao: el('linha-descricao').value.trim(),
-    tempoBatelada: +el('linha-tempo-batelada').value,
-    capacidadeBatelada: +el('linha-capacidade').value,
-    funcionariosMinimos: +el('linha-func-min').value,
-    tempoSetup: +el('linha-setup').value,
-    ativa: existing?.ativa ?? true
-  };
-  if(existing) { Object.assign(existing, entry); }
-  else { linhas.push(entry); }
-  saveLinhas();
-  renderLinhas();
-  closeModal('modal-linha');
-  showNotif('Linha salva com sucesso!');
+function populateReceitasSelect(){
+  const sel=el('op-receita');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Selecione a ficha técnica...</option>'+
+    localRecipes.map(r=>`<option value="${r.id}">${r.name}${r.category?' ('+r.category+')':''}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+// ── NOVA OP ───────────────────────────────────────────────────────────────────
+function initNovaOP(){
+  // Populate linhas
+  const lSel=el('op-linha');
+  lSel.innerHTML='<option value="">Selecionar linha...</option>'+linhas.map(l=>`<option value="${l.id}">${l.nome}</option>`).join('');
+  // Populate receitas
+  populateReceitasSelect();
+  hide(el('op-calc')); hide(el('op-receita-preview'));
+  el('op-data').value=new Date().toISOString().split('T')[0];
+}
+
+el('op-receita')?.addEventListener('change',()=>{
+  const r=localRecipes.find(x=>x.id===el('op-receita').value);
+  if(!r){ hide(el('op-receita-preview')); hide(el('op-calc')); return; }
+  // Show recipe preview
+  show(el('op-receita-preview'));
+  el('op-receita-ingredientes').innerHTML=(r.ingredients||[]).map(i=>{
+    const inv=localInventory.find(x=>x.id===i.productId);
+    const stock=inv?.totalQuantity||0;
+    const ok=stock>=i.quantity;
+    return `<div class="flex justify-between text-xs py-1 border-b border-slate-100">
+      <span>${inv?.name||i.productId}</span>
+      <span class="${ok?'text-emerald-600':'text-red-500'} font-semibold">${i.quantity}kg/bat <span class="text-slate-400 font-normal">(estoque: ${stock})</span></span>
+    </div>`;
+  }).join('')||'<p class="text-xs text-slate-400">Sem ingredientes.</p>';
+  calcOP();
 });
 
-// ─── EQUIPE ───────────────────────────────────────────────────────────────────
-function renderEquipe() {
-  const tbody = el('equipe-tbody');
-  if(funcionarios.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">Nenhum funcionário cadastrado.</td></tr>';
-    el('skill-matrix').innerHTML = '<p class="text-slate-400 text-sm">Cadastre funcionários para ver a matriz.</p>';
-    return;
-  }
+el('op-linha')?.addEventListener('change',calcOP);
+el('op-quantidade')?.addEventListener('input',calcOP);
 
-  const ausentes = funcionarios.filter(f => f.status !== 'presente');
-  if(ausentes.length > 0) {
-    show(el('absence-alert'));
-    el('absence-alert-text').innerHTML = `<p class="font-semibold text-amber-800 text-sm">${ausentes.length} funcionário(s) ausente(s):</p><p class="text-amber-700 text-xs">${ausentes.map(f => `${f.nome} (${f.status})`).join(' · ')}</p>`;
-  } else {
-    hide(el('absence-alert'));
-  }
+function calcOP(){
+  const linhaId=el('op-linha').value, qtd=parseFloat(el('op-quantidade').value)||0;
+  const recId=el('op-receita').value;
+  if(!linhaId||qtd<=0||!recId){ hide(el('op-calc')); return; }
+  const linha=linhas.find(l=>l.id===linhaId);
+  const rec=localRecipes.find(r=>r.id===recId);
+  if(!linha||!rec){ hide(el('op-calc')); return; }
+  show(el('op-calc'));
 
-  const statusColors = { presente:'badge-ok', ausente:'badge-danger', ferias:'badge-warn', afastado:'badge-gray' };
-  tbody.innerHTML = funcionarios.map(f => {
-    const chips = linhas.map(l => {
-      const has = (f.habilidades||[]).includes(l.id);
-      return `<span class="skill-chip ${has?'active':'inactive'}">${l.nome}</span>`;
-    }).join('');
-    return `<tr>
-      <td><p class="font-semibold text-slate-800">${f.nome}</p></td>
-      <td><span class="text-slate-500 text-xs">${f.setor||'--'}</span></td>
-      <td><div class="flex flex-wrap gap-0.5">${chips||'<span class="text-slate-400 text-xs">Nenhuma</span>'}</div></td>
-      <td><span class="badge ${statusColors[f.status]||'badge-gray'}">${f.status}</span></td>
-      <td class="no-print">
-        <div class="flex gap-1">
-          <button class="btn btn-secondary btn-sm" onclick="togglePresenca('${f.id}')">
-            <i class="fa-solid fa-${f.status==='presente'?'user-slash':'user-check'}"></i>
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="editFuncionario('${f.id}')"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-danger btn-sm" onclick="deleteFuncionario('${f.id}')"><i class="fa-solid fa-trash"></i></button>
-        </div>
-      </td>
-    </tr>`;
+  const bateladas=Math.ceil(qtd/(linha.capacidadeBatelada||1));
+  const tempoTotal=bateladas*linha.tempoBatelada+(linha.tempoSetup||0);
+  el('calc-bat').textContent=bateladas;
+  el('calc-tempo').textContent=tempoTotal;
+  el('calc-fn').textContent=linha.funcionariosMinimos;
+
+  // Funcionários aptos
+  const aptos=funcionarios.filter(f=>f.status==='presente'&&(f.habilidades||[]).includes(linhaId));
+  el('calc-fd').textContent=aptos.length;
+
+  // Necessidade de MP
+  const mpNeeds=(rec.ingredients||[]).map(i=>{
+    const inv=localInventory.find(x=>x.id===i.productId);
+    const needed=i.quantity*bateladas;
+    const stock=inv?.totalQuantity||0;
+    const ok=stock>=needed;
+    return `<div class="flex items-center justify-between p-2 ${ok?'bg-emerald-50':'bg-red-50'} rounded-lg text-xs">
+      <span class="font-semibold text-slate-700">${inv?.name||i.productId}</span>
+      <span class="${ok?'text-emerald-700':'text-red-700'} font-bold">${needed}kg necessário${ok?` <i class="fa-solid fa-check"></i>`:` ⚠️ estoque: ${stock}kg`}</span>
+    </div>`;
   }).join('');
+  if(mpNeeds){ show(el('calc-mp-panel')); el('calc-mp-list').innerHTML=mpNeeds; }
+  else hide(el('calc-mp-panel'));
 
-  renderSkillMatrix();
+  // Shortage de pessoal
+  const shortage=linha.funcionariosMinimos-aptos.length;
+  if(shortage>0){
+    show(el('calc-shortage'));
+    el('calc-shortage-msg').textContent=`Faltam ${shortage} pessoa(s) habilitada(s) para "${linha.nome}".`;
+    const cands=funcionarios.filter(f=>f.status==='presente'&&!(f.habilidades||[]).includes(linhaId));
+    if(cands.length){ show(el('calc-realloc')); el('calc-realloc-list').innerHTML=cands.slice(0,4).map(f=>`<div class="flex items-center justify-between p-2 bg-amber-50 rounded-lg"><div><p class="font-semibold text-xs text-slate-800">${f.nome}</p><p class="text-xs text-slate-400">${f.setor} · Hab: ${(f.habilidades||[]).map(h=>linhas.find(l=>l.id===h)?.nome||h).join(', ')||'nenhuma'}</p></div><span class="badge badge-warn"><i class="fa-solid fa-shuffle mr-1"></i>Realocar</span></div>`).join('');}
+    else hide(el('calc-realloc'));
+  }else{ hide(el('calc-shortage')); hide(el('calc-realloc')); }
+
+  // Func list
+  el('calc-func-list').innerHTML=aptos.length
+    ?aptos.map(f=>`<label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100"><input type="checkbox" class="op-fc w-4 h-4 accent-brand-500" value="${f.id}" checked><span class="text-sm font-semibold text-slate-700">${f.nome}</span><span class="text-xs text-slate-400">${f.setor}</span></label>`).join('')
+    :'<p class="text-slate-400 text-sm">Nenhum funcionário habilitado presente.</p>';
 }
 
-function renderSkillMatrix() {
-  const div = el('skill-matrix');
-  if(linhas.length === 0 || funcionarios.length === 0) { div.innerHTML = ''; return; }
-  const header = `<th class="text-left text-xs font-bold text-slate-500 uppercase p-2">Funcionário</th>` +
-    linhas.map(l => `<th class="text-center text-xs font-bold text-slate-500 uppercase p-2 whitespace-nowrap">${l.nome}</th>`).join('');
-  const rows = funcionarios.map(f => {
-    const cells = linhas.map(l => {
-      const has = (f.habilidades||[]).includes(l.id);
-      return `<td class="text-center p-2"><i class="fa-solid fa-${has?'check text-emerald-500':'xmark text-slate-300'}"></i></td>`;
-    }).join('');
-    const statusDot = f.status==='presente' ? 'bg-emerald-500' : 'bg-red-400';
-    return `<tr class="border-b border-slate-100">
-      <td class="p-2 text-sm font-semibold text-slate-700 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full ${statusDot} shrink-0"></span>${f.nome}
-      </td>${cells}
-    </tr>`;
-  }).join('');
-  div.innerHTML = `<table class="w-full text-sm"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-window.togglePresenca = function(id) {
-  const f = funcionarios.find(x => x.id === id);
-  if(!f) return;
-  f.status = f.status === 'presente' ? 'ausente' : 'presente';
-  saveFuncionarios();
-  renderEquipe();
-  renderDashboard();
-  showNotif(`${f.nome}: ${f.status}`);
-};
-
-window.editFuncionario = function(id) {
-  const f = funcionarios.find(x => x.id === id);
-  if(!f) return;
-  el('modal-func-title').textContent = 'Editar Funcionário';
-  el('func-id').value = f.id;
-  el('func-nome').value = f.nome;
-  el('func-setor').value = f.setor || '';
-  el('func-status').value = f.status;
-  buildHabilidadesCheckboxes(f.habilidades || []);
-  openModal('modal-funcionario');
-};
-
-window.deleteFuncionario = function(id) {
-  const f = funcionarios.find(x => x.id === id);
-  confirmAction('Remover Funcionário', `Remover ${f?.nome}?`, () => {
-    funcionarios = funcionarios.filter(x => x.id !== id);
-    saveFuncionarios();
-    renderEquipe();
-    renderDashboard();
-    showNotif('Funcionário removido.');
+el('form-nova-op')?.addEventListener('submit',e=>{
+  e.preventDefault();
+  const linhaId=el('op-linha').value, qtd=parseFloat(el('op-quantidade').value);
+  const recId=el('op-receita').value;
+  if(!linhaId||!qtd||!recId){showNotif('Preencha linha, ficha e quantidade.',true);return;}
+  const linha=linhas.find(l=>l.id===linhaId);
+  const rec=localRecipes.find(r=>r.id===recId);
+  const bateladas=Math.ceil(qtd/(linha?.capacidadeBatelada||1));
+  const tempo=bateladas*(linha?.tempoBatelada||0)+(linha?.tempoSetup||0);
+  const funcs=[...document.querySelectorAll('.op-fc:checked')].map(c=>c.value);
+  const opId='OP-'+String(ordens.length+1).padStart(4,'0');
+  ordens.push({
+    id:uid(),opId,linhaId,receitaId:recId,produto:rec?.name||recId,
+    quantidade:qtd,bateladas,tempoEstimado:tempo,
+    data:el('op-data').value,turno:el('op-turno').value,
+    prioridade:el('op-prioridade').value,observacoes:el('op-obs').value.trim(),
+    funcionariosAlocados:funcs,status:'pendente',criadoEm:new Date().toISOString()
   });
-};
-
-function buildHabilidadesCheckboxes(selected=[]) {
-  el('func-habilidades-list').innerHTML = linhas.map(l => `
-    <label class="flex items-center gap-2 cursor-pointer">
-      <input type="checkbox" value="${l.id}" ${selected.includes(l.id)?'checked':''} class="w-4 h-4 accent-brand-500">
-      <span class="text-sm text-slate-700">${l.nome}</span>
-    </label>`).join('');
-}
-
-el('form-funcionario').addEventListener('submit', e => {
-  e.preventDefault();
-  const id = el('func-id').value || uid();
-  const habs = [...el('func-habilidades-list').querySelectorAll('input[type=checkbox]:checked')].map(c => c.value);
-  const entry = {
-    id,
-    nome: el('func-nome').value.trim(),
-    setor: el('func-setor').value.trim(),
-    status: el('func-status').value,
-    habilidades: habs
-  };
-  const existing = funcionarios.find(f => f.id === id);
-  if(existing) { Object.assign(existing, entry); }
-  else { funcionarios.push(entry); }
-  saveFuncionarios();
-  closeModal('modal-funcionario');
-  renderEquipe();
-  renderDashboard();
-  showNotif('Funcionário salvo!');
+  saveOrdens(); renderDashboard(); showNotif(`OP ${opId} lançada!`); showScreen('ordens');
 });
 
-// ─── NOVA OP ──────────────────────────────────────────────────────────────────
-function initNovaOP() {
-  // Populate linha select
-  const sel = el('op-linha');
-  sel.innerHTML = '<option value="">Selecionar linha...</option>' +
-    linhas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
-  hide(el('op-calc-panel'));
-  el('form-nova-op').reset();
-  el('op-data').value = new Date().toISOString().split('T')[0];
-}
-
-function calcOP() {
-  const linhaId = el('op-linha').value;
-  const qtd = parseFloat(el('op-quantidade').value) || 0;
-  if(!linhaId || qtd <= 0) { hide(el('op-calc-panel')); return; }
-  const linha = linhas.find(l => l.id === linhaId);
-  if(!linha) return;
-  show(el('op-calc-panel'));
-
-  const bateladas = Math.ceil(qtd / linha.capacidadeBatelada);
-  const tempoTotal = bateladas * linha.tempoBatelada + linha.tempoSetup;
-  const funcNecessarios = linha.funcionariosMinimos;
-
-  // Aptos presentes
-  const aptos = funcionarios.filter(f => f.status === 'presente' && (f.habilidades||[]).includes(linhaId));
-  const disponiveis = aptos.length;
-
-  el('calc-bateladas').textContent = bateladas;
-  el('calc-tempo').textContent = tempoTotal;
-  el('calc-func-necessarios').textContent = funcNecessarios;
-  el('calc-func-disponiveis').textContent = disponiveis;
-
-  // Shortage
-  const shortage = funcNecessarios - disponiveis;
-  if(shortage > 0) {
-    show(el('calc-shortage-alert'));
-    el('calc-shortage-msg').textContent = `Faltam ${shortage} pessoa(s) habilitada(s) para esta linha.`;
-
-    // Reallocation suggestions
-    const candidates = funcionarios.filter(f =>
-      f.status === 'presente' &&
-      !(f.habilidades||[]).includes(linhaId) &&
-      f.habilidades?.length > 0
-    );
-    if(candidates.length > 0) {
-      show(el('calc-realloc-panel'));
-      el('calc-realloc-list').innerHTML = candidates.slice(0,5).map(f => `
-        <div class="flex items-center justify-between p-2 bg-amber-50 rounded-lg">
-          <div>
-            <p class="font-semibold text-slate-800 text-sm">${f.nome}</p>
-            <p class="text-slate-500 text-xs">${f.setor} · Hab: ${(f.habilidades||[]).map(h => linhas.find(l=>l.id===h)?.nome||h).join(', ')}</p>
-          </div>
-          <span class="badge badge-warn"><i class="fa-solid fa-shuffle mr-1"></i>Realocar</span>
-        </div>`).join('');
-    } else {
-      hide(el('calc-realloc-panel'));
-    }
-  } else {
-    hide(el('calc-shortage-alert'));
-    hide(el('calc-realloc-panel'));
-  }
-
-  // Functional list with checkboxes
-  el('calc-func-list').innerHTML = aptos.length > 0 ? aptos.map(f => `
-    <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100">
-      <input type="checkbox" class="op-func-check w-4 h-4 accent-brand-500" value="${f.id}" checked>
-      <span class="text-sm font-semibold text-slate-700">${f.nome}</span>
-      <span class="text-xs text-slate-400">${f.setor}</span>
-    </label>`).join('') : '<p class="text-slate-400 text-sm">Nenhum funcionário habilitado presente.</p>';
-}
-
-el('op-linha').addEventListener('change', calcOP);
-el('op-quantidade').addEventListener('input', calcOP);
-
-el('form-nova-op').addEventListener('submit', e => {
-  e.preventDefault();
-  const linhaId = el('op-linha').value;
-  const qtd = parseFloat(el('op-quantidade').value);
-  if(!linhaId || !qtd) return;
-  const linha = linhas.find(l => l.id === linhaId);
-  const bateladas = Math.ceil(qtd / (linha?.capacidadeBatelada||1));
-  const tempoTotal = bateladas * (linha?.tempoBatelada||0) + (linha?.tempoSetup||0);
-  const funcChecks = [...document.querySelectorAll('.op-func-check:checked')].map(c => c.value);
-  const opId = 'OP-' + String(ordens.length + 1).padStart(4, '0');
-
-  const op = {
-    id: uid(),
-    opId,
-    linhaId,
-    produto: el('op-produto').value.trim(),
-    quantidade: qtd,
-    data: el('op-data').value,
-    turno: el('op-turno').value,
-    prioridade: el('op-prioridade').value,
-    observacoes: el('op-obs').value.trim(),
-    bateladas,
-    tempoEstimado: tempoTotal,
-    funcionariosAlocados: funcChecks,
-    status: 'pendente',
-    criadoEm: new Date().toISOString()
-  };
-  ordens.push(op);
-  saveOrdens();
-  renderDashboard();
-  showNotif(`OP ${opId} lançada!`);
-  showScreen('ordens');
-});
-
-// ─── ORDENS ───────────────────────────────────────────────────────────────────
-function renderOrdens() {
-  const container = el('ordens-list');
-  let filtered = [...ordens].reverse();
-  if(opFilter !== 'all') filtered = filtered.filter(o => o.status === opFilter);
-
-  if(filtered.length === 0) {
-    container.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Nenhuma ordem de produção encontrada.</p>';
-    return;
-  }
-
-  container.innerHTML = filtered.map(op => {
-    const linha = linhas.find(l => l.id === op.linhaId);
-    const funcNames = (op.funcionariosAlocados||[]).map(id => funcionarios.find(f=>f.id===id)?.nome||'?').join(', ');
-    const colorClass = op.linhaId==='variedades'?'border-l-amber-400':op.linhaId==='helicoidal'?'border-l-purple-400':'border-l-brand-400';
-    return `
-    <div class="card p-4 border-l-4 ${colorClass} hover:shadow-md transition-shadow cursor-pointer" onclick="openOPDetail('${op.id}')">
+// ── ORDENS ────────────────────────────────────────────────────────────────────
+function renderOrdens(){
+  const cont=el('ordens-list');
+  let list=[...ordens].reverse();
+  if(opFilter!=='all') list=list.filter(o=>o.status===opFilter);
+  if(!list.length){ cont.innerHTML='<p class="text-slate-400 text-sm text-center py-8">Nenhuma ordem encontrada.</p>'; return; }
+  cont.innerHTML=list.map(op=>{
+    const l=linhas.find(x=>x.id===op.linhaId);
+    const cl=op.linhaId==='variedades'?'border-l-amber-400':op.linhaId==='helicoidal'?'border-l-purple-400':'border-l-brand-400';
+    return `<div class="card p-4 border-l-4 ${cl} hover:shadow-md transition-shadow cursor-pointer mb-3" onclick="openOPDetail('${op.id}')">
       <div class="flex items-start justify-between">
         <div class="flex-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="font-mono text-xs text-slate-400">${op.opId}</span>
-            ${opStatusBadge(op.status)}
-            ${prioridadeBadge(op.prioridade)}
-          </div>
-          <h3 class="font-bold text-slate-800 mt-1">${op.produto}</h3>
-          <p class="text-slate-500 text-sm">${linha?.nome||op.linhaId} · ${op.quantidade}kg · ${op.bateladas} bateladas · ~${op.tempoEstimado}min</p>
-          <p class="text-slate-400 text-xs mt-1">${formatDate(op.data)} · Turno: ${op.turno} ${funcNames ? '· <i class="fa-solid fa-users"></i> ' + funcNames : ''}</p>
+          <div class="flex items-center gap-2 flex-wrap mb-1"><span class="font-mono text-xs text-slate-400">${op.opId}</span>${opBadge(op.status)}${prioBadge(op.prioridade)}</div>
+          <h3 class="font-bold">${op.produto}</h3>
+          <p class="text-slate-500 text-sm">${l?.nome||op.linhaId} · ${op.quantidade}kg · ${op.bateladas} bateladas · ~${op.tempoEstimado}min</p>
+          <p class="text-slate-400 text-xs mt-1">${fmtDate(op.data)} · Turno: ${op.turno}</p>
         </div>
-        <div class="flex gap-1 ml-2">
-          ${op.status === 'pendente' ? `<button class="btn btn-success btn-sm no-print" onclick="event.stopPropagation();updateOPStatus('${op.id}','em_andamento')"><i class="fa-solid fa-play"></i></button>` : ''}
-          ${op.status === 'em_andamento' ? `<button class="btn btn-primary btn-sm no-print" onclick="event.stopPropagation();updateOPStatus('${op.id}','concluida')"><i class="fa-solid fa-check"></i></button>` : ''}
-          <button class="btn btn-danger btn-sm no-print" onclick="event.stopPropagation();deleteOP('${op.id}')"><i class="fa-solid fa-trash"></i></button>
+        <div class="flex gap-1 ml-2 no-print">
+          ${op.status==='pendente'?`<button class="btn btn-g btn-sm" onclick="event.stopPropagation();updOP('${op.id}','em_andamento')"><i class="fa-solid fa-play"></i></button>`:''}
+          ${op.status==='em_andamento'?`<button class="btn btn-p btn-sm" onclick="event.stopPropagation();updOP('${op.id}','concluida')"><i class="fa-solid fa-check"></i></button>`:''}
+          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delOP('${op.id}')"><i class="fa-solid fa-trash"></i></button>
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
-document.querySelectorAll('.op-filter').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.op-filter').forEach(b => b.classList.replace('btn-primary','btn-secondary'));
-    btn.classList.replace('btn-secondary','btn-primary');
-    opFilter = btn.dataset.filter;
-    renderOrdens();
-  });
-});
+document.querySelectorAll('.op-f').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.op-f').forEach(x=>x.className=x.className.replace('btn-p','btn-s'));
+  b.className=b.className.replace('btn-s','btn-p');
+  opFilter=b.dataset.f; renderOrdens();
+}));
 
-window.updateOPStatus = function(id, status) {
-  const op = ordens.find(o => o.id === id);
-  if(!op) return;
-  op.status = status;
-  if(status === 'em_andamento') op.iniciadoEm = new Date().toISOString();
-  if(status === 'concluida') op.concluidoEm = new Date().toISOString();
-  saveOrdens();
-  renderOrdens();
-  renderDashboard();
-  const labels = { em_andamento:'Em andamento', concluida:'Concluída' };
-  showNotif(`OP ${op.opId}: ${labels[status]||status}`);
+window.updOP=function(id,status){
+  const op=ordens.find(o=>o.id===id); if(!op) return;
+  op.status=status;
+  if(status==='em_andamento') op.iniciadoEm=new Date().toISOString();
+  if(status==='concluida') op.concluidoEm=new Date().toISOString();
+  saveOrdens(); renderOrdens(); renderDashboard();
+  showNotif(`OP ${op.opId}: ${status==='em_andamento'?'Em andamento':'Concluída'}`);
 };
 
-window.deleteOP = function(id) {
-  const op = ordens.find(o => o.id === id);
-  confirmAction('Excluir OP', `Excluir a ordem ${op?.opId}?`, () => {
-    ordens = ordens.filter(o => o.id !== id);
-    saveOrdens();
-    renderOrdens();
-    renderDashboard();
+window.delOP=function(id){
+  const op=ordens.find(o=>o.id===id);
+  confirmAction('Excluir OP',`Excluir ${op?.opId}?`,()=>{
+    ordens=ordens.filter(o=>o.id!==id); saveOrdens(); renderOrdens(); renderDashboard();
     showNotif('OP excluída.');
   });
 };
 
-window.openOPDetail = function(id) {
-  const op = ordens.find(o => o.id === id);
-  if(!op) return;
-  const linha = linhas.find(l => l.id === op.linhaId);
-  const funcNames = (op.funcionariosAlocados||[]).map(fid => {
-    const f = funcionarios.find(x => x.id === fid);
-    return f ? `<span class="badge badge-info">${f.nome}</span>` : '';
-  }).join(' ') || '<span class="text-slate-400 text-xs">Nenhum alocado</span>';
+window.openOPDetail=function(id){
+  const op=ordens.find(o=>o.id===id); if(!op) return;
+  const l=linhas.find(x=>x.id===op.linhaId);
+  const rec=localRecipes.find(r=>r.id===op.receitaId);
+  const funcs=(op.funcionariosAlocados||[]).map(fid=>funcionarios.find(x=>x.id===fid)?.nome||'?').join(', ')||'–';
+  const mpNeeds=rec?(rec.ingredients||[]).map(i=>{
+    const inv=localInventory.find(x=>x.id===i.productId);
+    return `<div class="flex justify-between text-xs py-1 border-b border-slate-100"><span>${inv?.name||i.productId}</span><span class="font-semibold">${i.quantity*op.bateladas}kg</span></div>`;
+  }).join(''):'';
 
-  el('op-detail-title').textContent = `${op.opId} — ${op.produto}`;
-  el('op-detail-content').innerHTML = `
+  el('op-detail-title').textContent=`${op.opId} — ${op.produto}`;
+  el('op-detail-body').innerHTML=`
     <div class="space-y-3">
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-slate-50 rounded-xl p-3">
-          <p class="text-slate-400 text-xs">Linha</p>
-          <p class="font-semibold text-slate-800">${linha?.nome||op.linhaId}</p>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3">
-          <p class="text-slate-400 text-xs">Quantidade</p>
-          <p class="font-semibold text-slate-800">${op.quantidade} kg</p>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3">
-          <p class="text-slate-400 text-xs">Bateladas</p>
-          <p class="font-semibold text-slate-800">${op.bateladas}</p>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3">
-          <p class="text-slate-400 text-xs">Tempo Estimado</p>
-          <p class="font-semibold text-slate-800">${op.tempoEstimado} min</p>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3">
-          <p class="text-slate-400 text-xs">Data / Turno</p>
-          <p class="font-semibold text-slate-800">${formatDate(op.data)} · ${op.turno}</p>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3">
-          <p class="text-slate-400 text-xs">Prioridade</p>
-          ${prioridadeBadge(op.prioridade)}
-        </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Linha</p><p class="font-semibold text-sm">${l?.nome||op.linhaId}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Quantidade</p><p class="font-semibold text-sm">${op.quantidade} kg</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Bateladas</p><p class="font-semibold text-sm">${op.bateladas}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Tempo Est.</p><p class="font-semibold text-sm">${op.tempoEstimado} min</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Data / Turno</p><p class="font-semibold text-sm">${fmtDate(op.data)} · ${op.turno}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Prioridade</p>${prioBadge(op.prioridade)}</div>
       </div>
-      <div class="bg-slate-50 rounded-xl p-3">
-        <p class="text-slate-400 text-xs mb-1">Equipe Alocada</p>
-        <div class="flex flex-wrap gap-1">${funcNames}</div>
-      </div>
-      ${op.observacoes ? `<div class="bg-slate-50 rounded-xl p-3"><p class="text-slate-400 text-xs mb-1">Observações</p><p class="text-slate-700 text-sm">${op.observacoes}</p></div>` : ''}
-      <div class="bg-slate-50 rounded-xl p-3">
-        <p class="text-slate-400 text-xs mb-1">Timeline</p>
-        <div class="space-y-1 text-xs text-slate-600">
-          <p><span class="font-semibold">Criado:</span> ${new Date(op.criadoEm).toLocaleString('pt-BR')}</p>
-          ${op.iniciadoEm ? `<p><span class="font-semibold">Iniciado:</span> ${new Date(op.iniciadoEm).toLocaleString('pt-BR')}</p>` : ''}
-          ${op.concluidoEm ? `<p><span class="font-semibold">Concluído:</span> ${new Date(op.concluidoEm).toLocaleString('pt-BR')}</p>` : ''}
-        </div>
+      ${mpNeeds?`<div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400 mb-1">Consumo de MP (total da OP)</p>${mpNeeds}</div>`:''}
+      <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400 mb-1">Equipe</p><p class="text-sm font-semibold">${funcs}</p></div>
+      ${op.observacoes?`<div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400 mb-1">Obs.</p><p class="text-sm">${op.observacoes}</p></div>`:''}
+      <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-500">
+        <p>Criado: ${new Date(op.criadoEm).toLocaleString('pt-BR')}</p>
+        ${op.iniciadoEm?`<p>Iniciado: ${new Date(op.iniciadoEm).toLocaleString('pt-BR')}</p>`:''}
+        ${op.concluidoEm?`<p>Concluído: ${new Date(op.concluidoEm).toLocaleString('pt-BR')}</p>`:''}
       </div>
     </div>`;
-
-  el('op-detail-actions').innerHTML = `
-    ${op.status==='pendente' ? `<button class="btn btn-success btn-sm" onclick="updateOPStatus('${op.id}','em_andamento');closeModal('modal-op-detail')"><i class="fa-solid fa-play"></i> Iniciar</button>` : ''}
-    ${op.status==='em_andamento' ? `<button class="btn btn-primary btn-sm" onclick="updateOPStatus('${op.id}','concluida');closeModal('modal-op-detail')"><i class="fa-solid fa-check"></i> Concluir</button>` : ''}
-    <button class="btn btn-secondary btn-sm ml-auto" onclick="closeModal('modal-op-detail')">Fechar</button>`;
-
-  openModal('modal-op-detail');
+  el('op-detail-actions').innerHTML=`
+    ${op.status==='pendente'?`<button class="btn btn-g btn-sm" onclick="updOP('${op.id}','em_andamento');closeModal('modal-op')"><i class="fa-solid fa-play"></i> Iniciar</button>`:''}
+    ${op.status==='em_andamento'?`<button class="btn btn-p btn-sm" onclick="updOP('${op.id}','concluida');closeModal('modal-op')"><i class="fa-solid fa-check"></i> Concluir</button>`:''}
+    <button class="btn btn-s btn-sm ml-auto" onclick="closeModal('modal-op')">Fechar</button>`;
+  openModal('modal-op');
 };
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-window.saveConfig = function() {
-  config.diasAlertaMP = parseInt(el('cfg-dias-mp').value) || 7;
-  config.diasAlertaPA = parseInt(el('cfg-dias-pa').value) || 3;
-  config.masterUid = el('cfg-master-uid').value.trim();
+// ── LINHAS ────────────────────────────────────────────────────────────────────
+function renderLinhas(){
+  const c=el('linhas-list');
+  if(!linhas.length){ c.innerHTML='<p class="text-slate-400 col-span-2 text-center py-8">Nenhuma linha cadastrada.</p>'; return; }
+  c.innerHTML=linhas.map(l=>`
+    <div class="card p-5 lcard ${l.id==='variedades'?'variedades':l.id==='helicoidal'?'helicoidal':'custom'}">
+      <div class="flex items-start justify-between mb-2 pl-2">
+        <div class="flex-1"><h3 class="font-bold">${l.nome}</h3><p class="text-slate-400 text-xs">${l.descricao||''}</p></div>
+        <div class="flex gap-1"><button class="btn btn-s btn-sm" onclick="editLinha('${l.id}')"><i class="fa-solid fa-pen"></i></button><button class="btn btn-d btn-sm" onclick="delLinha('${l.id}')"><i class="fa-solid fa-trash"></i></button></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pl-2 mt-2">
+        <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-xs text-slate-400">Tempo/Bat</p><p class="text-xl font-bold text-slate-700">${l.tempoBatelada}<span class="text-xs font-normal">min</span></p></div>
+        <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-xs text-slate-400">Cap./Bat</p><p class="text-xl font-bold text-slate-700">${l.capacidadeBatelada}<span class="text-xs font-normal">kg</span></p></div>
+        <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-xs text-slate-400">Func. Mín.</p><p class="text-xl font-bold text-teal-600">${l.funcionariosMinimos}</p></div>
+        <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-xs text-slate-400">Setup</p><p class="text-xl font-bold text-slate-700">${l.tempoSetup}<span class="text-xs font-normal">min</span></p></div>
+      </div>
+    </div>`).join('');
+}
+window.editLinha=function(id){
+  const l=linhas.find(x=>x.id===id); if(!l) return;
+  el('modal-linha-title').textContent='Editar Linha'; el('linha-id').value=l.id;
+  el('linha-nome').value=l.nome; el('linha-desc').value=l.descricao||'';
+  el('linha-tempo').value=l.tempoBatelada; el('linha-cap').value=l.capacidadeBatelada;
+  el('linha-fmin').value=l.funcionariosMinimos; el('linha-setup').value=l.tempoSetup;
+  openModal('modal-linha');
+};
+window.delLinha=function(id){
+  confirmAction('Excluir Linha','Esta linha será removida permanentemente.',()=>{ linhas=linhas.filter(l=>l.id!==id); saveLinhas(); renderLinhas(); showNotif('Linha removida.'); });
+};
+el('form-linha')?.addEventListener('submit',e=>{
+  e.preventDefault();
+  const id=el('linha-id').value||uid();
+  const entry={id,nome:el('linha-nome').value.trim(),descricao:el('linha-desc').value.trim(),tempoBatelada:+el('linha-tempo').value,capacidadeBatelada:+el('linha-cap').value,funcionariosMinimos:+el('linha-fmin').value,tempoSetup:+el('linha-setup').value,ativa:true};
+  const ex=linhas.find(l=>l.id===id);
+  if(ex) Object.assign(ex,entry); else linhas.push(entry);
+  saveLinhas(); renderLinhas(); closeModal('modal-linha'); showNotif('Linha salva!');
+});
+
+// ── EQUIPE ────────────────────────────────────────────────────────────────────
+function renderEquipe(){
+  const tbody=el('equipe-tbody');
+  if(!funcionarios.length){ tbody.innerHTML='<tr><td colspan="5" class="text-center py-8 text-slate-400">Nenhum funcionário cadastrado.</td></tr>'; el('skill-matrix').innerHTML=''; return; }
+  const aus=funcionarios.filter(f=>f.status!=='presente');
+  if(aus.length){ show(el('absence-alert')); el('absence-text').innerHTML=`<p class="font-semibold text-amber-800 text-sm">${aus.length} ausente(s):</p><p class="text-amber-700 text-xs">${aus.map(f=>`${f.nome} (${f.status})`).join(' · ')}</p>`; }
+  else hide(el('absence-alert'));
+  const sC={presente:'badge-ok',ausente:'badge-danger',ferias:'badge-warn',afastado:'badge-gray'};
+  tbody.innerHTML=funcionarios.map(f=>`<tr>
+    <td><p class="font-semibold">${f.nome}</p></td>
+    <td><span class="text-xs text-slate-500">${f.setor||'--'}</span></td>
+    <td><div class="flex flex-wrap gap-0.5">${linhas.map(l=>`<span class="skill-chip ${(f.habilidades||[]).includes(l.id)?'on':'off'}">${l.nome}</span>`).join('')||'–'}</div></td>
+    <td><span class="badge ${sC[f.status]||'badge-gray'}">${f.status}</span></td>
+    <td class="no-print"><div class="flex gap-1">
+      <button class="btn btn-s btn-sm" onclick="togglePresenca('${f.id}')"><i class="fa-solid fa-${f.status==='presente'?'user-slash':'user-check'}"></i></button>
+      <button class="btn btn-s btn-sm" onclick="editFunc('${f.id}')"><i class="fa-solid fa-pen"></i></button>
+      <button class="btn btn-d btn-sm" onclick="delFunc('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+    </div></td>
+  </tr>`).join('');
+  // Skill matrix
+  const header='<th class="text-xs font-bold text-slate-500 uppercase p-2 text-left">Funcionário</th>'+linhas.map(l=>`<th class="text-center text-xs font-bold text-slate-500 uppercase p-2 whitespace-nowrap">${l.nome}</th>`).join('');
+  const rows=funcionarios.map(f=>{
+    const dot=f.status==='presente'?'bg-emerald-500':'bg-red-400';
+    return `<tr class="border-b border-slate-100"><td class="p-2 text-sm font-semibold text-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full ${dot} shrink-0"></span>${f.nome}</td>${linhas.map(l=>`<td class="text-center p-2"><i class="fa-solid fa-${(f.habilidades||[]).includes(l.id)?'check text-emerald-500':'xmark text-slate-300'}"></i></td>`).join('')}</tr>`;
+  }).join('');
+  el('skill-matrix').innerHTML=`<table class="w-full text-sm"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+window.togglePresenca=function(id){ const f=funcionarios.find(x=>x.id===id); if(!f) return; f.status=f.status==='presente'?'ausente':'presente'; saveFuncs(); renderEquipe(); renderDashboard(); showNotif(`${f.nome}: ${f.status}`); };
+window.editFunc=function(id){ const f=funcionarios.find(x=>x.id===id); if(!f) return; el('modal-func-title').textContent='Editar Funcionário'; el('func-id').value=f.id; el('func-nome').value=f.nome; el('func-setor').value=f.setor||''; el('func-status').value=f.status; buildHabCbs(f.habilidades||[]); openModal('modal-funcionario'); };
+window.delFunc=function(id){ const f=funcionarios.find(x=>x.id===id); confirmAction('Remover',`Remover ${f?.nome}?`,()=>{ funcionarios=funcionarios.filter(x=>x.id!==id); saveFuncs(); renderEquipe(); renderDashboard(); showNotif('Removido.'); }); };
+function buildHabCbs(sel=[]){ el('func-hab-list').innerHTML=linhas.map(l=>`<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="${l.id}" ${sel.includes(l.id)?'checked':''} class="w-4 h-4 accent-brand-500"><span class="text-sm">${l.nome}</span></label>`).join(''); }
+el('form-funcionario')?.addEventListener('submit',e=>{
+  e.preventDefault();
+  const id=el('func-id').value||uid();
+  const habs=[...el('func-hab-list').querySelectorAll('input:checked')].map(c=>c.value);
+  const entry={id,nome:el('func-nome').value.trim(),setor:el('func-setor').value.trim(),status:el('func-status').value,habilidades:habs};
+  const ex=funcionarios.find(f=>f.id===id);
+  if(ex) Object.assign(ex,entry); else funcionarios.push(entry);
+  saveFuncs(); closeModal('modal-funcionario'); renderEquipe(); renderDashboard(); showNotif('Funcionário salvo!');
+});
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+function renderCfgConsumo(){
+  const div=el('cfg-consumo-list');
+  if(!div) return;
+  div.innerHTML=localInventory.map(i=>`
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-slate-700 flex-1 truncate">${i.name}</span>
+      <input type="number" class="fi w-28 text-xs" step="0.1" min="0" placeholder="0 = auto" value="${config.consumoDiario?.[i.id]||''}" onchange="config.consumoDiario=config.consumoDiario||{};config.consumoDiario['${i.id}']=parseFloat(this.value)||0">
+      <span class="text-xs text-slate-400">kg/dia</span>
+    </div>`).join('')||'<p class="text-slate-400 text-sm">Carregue as MP primeiro.</p>';
+}
+window.saveConfig=function(){
+  config.diasAlertaMP=parseInt(el('cfg-dias-mp').value)||7;
+  config.diasAlertaPA=parseInt(el('cfg-dias-pa').value)||3;
+  config.masterUid=el('cfg-master-uid').value.trim();
   saveCfg();
-  if(config.masterUid) {
-    masterUid = config.masterUid;
-    startListeners(masterUid);
-  }
+  if(config.masterUid){ masterUid=config.masterUid; startListeners(masterUid); }
+  renderMP(); renderDashboard();
   showNotif('Configurações salvas!');
 };
-
-window.exportData = function() {
-  const data = { linhas, funcionarios, ordens, config };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `pcp-backup-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
+window.exportData=function(){
+  const b=new Blob([JSON.stringify({linhas,funcionarios,ordens,config},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download=`pcp-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
   showNotif('Dados exportados!');
 };
-
-window.importData = function() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = e => {
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const d = JSON.parse(ev.target.result);
-        if(d.linhas) { linhas = d.linhas; saveLinhas(); }
-        if(d.funcionarios) { funcionarios = d.funcionarios; saveFuncionarios(); }
-        if(d.ordens) { ordens = d.ordens; saveOrdens(); }
-        if(d.config) { config = {...config,...d.config}; saveCfg(); }
-        renderDashboard();
-        showNotif('Dados importados!');
-      } catch(err) { showNotif('Arquivo inválido.', true); }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
+window.importData=function(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
+  inp.onchange=e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=ev=>{ try{ const d=JSON.parse(ev.target.result);
+      if(d.linhas){linhas=d.linhas;saveLinhas();} if(d.funcionarios){funcionarios=d.funcionarios;saveFuncs();}
+      if(d.ordens){ordens=d.ordens;saveOrdens();} if(d.config){config={...config,...d.config};saveCfg();}
+      renderDashboard(); showNotif('Importado!'); }catch(err){showNotif('Arquivo inválido.',true);} };
+    r.readAsText(f);
+  }; inp.click();
 };
-
-window.clearAllData = function() {
-  confirmAction('Limpar Dados PCP', 'ATENÇÃO: Todos os dados de linhas, funcionários e ordens serão apagados. Esta ação é irreversível!', () => {
-    localStorage.removeItem('pcp_linhas');
-    localStorage.removeItem('pcp_funcionarios');
-    localStorage.removeItem('pcp_ordens');
-    localStorage.removeItem('pcp_config');
-    linhas = DEFAULT_LINHAS;
-    funcionarios = [];
-    ordens = [];
-    config = { diasAlertaMP:7, diasAlertaPA:3, masterUid:'' };
-    renderDashboard();
-    renderLinhas();
-    renderEquipe();
-    renderOrdens();
-    showNotif('Dados limpos.');
+window.clearAllData=function(){
+  confirmAction('Limpar Dados','ATENÇÃO: Todos os dados locais do PCP serão apagados.',()=>{
+    ['pcp_linhas','pcp_funcionarios','pcp_ordens','pcp_config'].forEach(k=>localStorage.removeItem(k));
+    linhas=DEFAULT_LINHAS; funcionarios=[]; ordens=[]; config={diasAlertaMP:7,diasAlertaPA:3,masterUid:'',consumoDiario:{}};
+    renderDashboard(); renderLinhas(); showNotif('Dados limpos.');
   });
 };
 
-// ─── MODAL UTILS ─────────────────────────────────────────────────────────────
-function openModal(id) {
-  const m = el(id);
-  if(!m) return;
-  if(id === 'modal-funcionario') buildHabilidadesCheckboxes([]);
-  m.classList.add('open');
-}
-function closeModal(id) {
-  const m = el(id);
-  if(m) m.classList.remove('open');
-}
-window.openModal = openModal;
-window.closeModal = closeModal;
-
-let confirmCallback = null;
-function confirmAction(title, msg, cb) {
-  el('confirm-title').textContent = title;
-  el('confirm-msg').textContent = msg;
-  confirmCallback = cb;
-  openModal('modal-confirm');
-}
-window.confirmAction = confirmAction;
-el('confirm-yes').addEventListener('click', () => {
-  closeModal('modal-confirm');
-  if(confirmCallback) confirmCallback();
-  confirmCallback = null;
-});
-
+// ── MODAL UTILS ───────────────────────────────────────────────────────────────
+function openModal(id){ const m=el(id); if(!m) return; if(id==='modal-funcionario') buildHabCbs([]); m.classList.add('open'); }
+function closeModal(id){ el(id)?.classList.remove('open'); }
+window.openModal=openModal; window.closeModal=closeModal;
+let _confirmCb=null;
+function confirmAction(title,msg,cb){ el('confirm-title').textContent=title; el('confirm-msg').textContent=msg; _confirmCb=cb; openModal('modal-confirm'); }
+window.confirmAction=confirmAction;
+el('confirm-yes').addEventListener('click',()=>{ closeModal('modal-confirm'); _confirmCb&&_confirmCb(); _confirmCb=null; });
 </script>
 </body>
 </html>
