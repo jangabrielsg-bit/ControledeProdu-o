@@ -62,6 +62,15 @@ body{font-family:'Inter',sans-serif;}
 .risco-perda{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
 .risco-ruptura{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;}
 .risco-ok{background:#f0fdf4;color:#166534;border:1px solid #86efac;}
+.risco-vencido{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+.risco-semdata{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
+nav{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+nav::-webkit-scrollbar{display:none;}
+.nav-item{min-width:52px;flex-shrink:0;}
+.mp-prod-card{cursor:pointer;transition:box-shadow .15s,transform .1s;}
+.mp-prod-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(-1px);}
+.timer-ring{transition:stroke-dashoffset .5s linear;}
+.tunel-bar{transition:height .3s;}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -164,17 +173,10 @@ body{font-family:'Inter',sans-serif;}
         <button class="btn btn-sm btn-s mp-f" data-f="vencendo">Vencendo</button>
         <button class="btn btn-sm btn-s mp-f" data-f="ok">OK</button>
       </div>
-      <div class="tw">
-        <table class="bt">
-          <thead><tr>
-            <th>Produto / Lote</th><th>Estoque</th><th>Mín.</th>
-            <th>Validade</th><th>Dias Rest.</th>
-            <th>Consumo/dia</th><th>Cobertura</th><th>Risco</th>
-          </tr></thead>
-          <tbody id="mp-tbody"><tr><td colspan="8" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando...</td></tr></tbody>
-        </table>
+      <div id="mp-cards" class="space-y-2">
+        <p class="text-slate-400 text-sm text-center py-8"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando...</p>
       </div>
-      <p id="mp-note" class="text-slate-400 text-xs mt-2">* Consumo/dia calculado com base nas OPs planejadas + consumo médio configurado.</p>
+      <p class="text-slate-400 text-xs mt-2">* Toque em um produto para ver detalhes dos lotes. Consumo baseado nas OPs planejadas.</p>
     </section>
 
     <!-- PRODUTOS ACABADOS -->
@@ -386,6 +388,116 @@ body{font-family:'Inter',sans-serif;}
       <div id="ordens-list"><p class="text-slate-400 text-sm text-center py-8">Nenhuma ordem encontrada.</p></div>
     </section>
 
+    <!-- CAPACIDADE DO TURNO -->
+    <section id="screen-capacidade" class="screen p-4 max-w-3xl mx-auto">
+      <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-gauge text-brand-500 mr-2"></i>Capacidade do Turno</h2>
+      <div class="card p-4 mb-4">
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label class="fl">Linha de Produção</label>
+            <select id="cap-linha" class="fi" onchange="calcCapacidade()"><option value="">Selecione...</option></select>
+          </div>
+          <div>
+            <label class="fl">Horas do Turno</label>
+            <input type="number" id="cap-horas" class="fi" value="8" min="1" max="24" step="0.5" oninput="calcCapacidade()">
+          </div>
+          <div>
+            <label class="fl">Funcionários Disponíveis</label>
+            <input type="number" id="cap-funcs" class="fi" value="3" min="1" oninput="calcCapacidade()">
+          </div>
+        </div>
+      </div>
+      <div id="cap-result" class="hidden space-y-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="kpi text-center"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Batidas</p><p id="cap-r-bat" class="text-3xl font-bold text-brand-600">--</p></div>
+          <div class="kpi text-center"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Kg Estimados</p><p id="cap-r-kg" class="text-3xl font-bold text-emerald-600">--</p></div>
+          <div class="kpi text-center"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Tempo Produtivo</p><p id="cap-r-tempo" class="text-3xl font-bold text-purple-600">--</p><p class="text-slate-400 text-xs">h</p></div>
+          <div class="kpi text-center"><p class="text-slate-400 text-xs font-semibold uppercase mb-1">Ociosidade</p><p id="cap-r-ocioso" class="text-3xl font-bold text-amber-500">--</p><p class="text-slate-400 text-xs">min</p></div>
+        </div>
+        <div id="cap-func-alert" class="hidden arow warn">
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+          <div id="cap-func-alert-msg"></div>
+        </div>
+        <div class="card p-4">
+          <p class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-timeline text-brand-500 mr-2"></i>Linha do Tempo das Batidas</p>
+          <div id="cap-timeline-content" class="overflow-x-auto"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CRONÔMETRO DE BATIDAS -->
+    <section id="screen-timer" class="screen p-4 max-w-2xl mx-auto">
+      <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-stopwatch text-red-500 mr-2"></i>Cronômetro de Batidas</h2>
+      <div class="card p-4 mb-4">
+        <div class="grid sm:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="fl">Linha de Produção</label>
+            <select id="timer-linha" class="fi" onchange="timerLinhaChange()"><option value="">Selecione...</option></select>
+          </div>
+          <div>
+            <label class="fl">Número da Batida</label>
+            <input type="number" id="timer-bat-num" class="fi" value="1" min="1">
+          </div>
+        </div>
+        <div class="flex flex-col items-center py-2">
+          <div class="relative mb-4" style="width:180px;height:180px;">
+            <svg width="180" height="180" style="transform:rotate(-90deg)">
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+              <circle id="timer-ring" cx="90" cy="90" r="80" fill="none" stroke="#0ea5e9" stroke-width="10" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="502.65" class="timer-ring"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="timer-display" class="text-4xl font-bold font-mono text-slate-800">0:00</span>
+              <span id="timer-vs" class="text-xs text-slate-400 mt-1">padrão: --</span>
+            </div>
+          </div>
+          <div class="flex gap-3 mb-3">
+            <button id="btn-timer-start" class="btn btn-g" onclick="timerStart()"><i class="fa-solid fa-play"></i> Iniciar</button>
+            <button id="btn-timer-stop" class="btn btn-d hidden" onclick="timerStop()"><i class="fa-solid fa-stop"></i> Parar</button>
+            <button class="btn btn-s" onclick="timerReset()"><i class="fa-solid fa-rotate-left"></i></button>
+          </div>
+          <div id="timer-status" class="text-sm text-slate-500 text-center min-h-5"></div>
+        </div>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-slate-700"><i class="fa-solid fa-list-check text-brand-500 mr-2"></i>Histórico do Turno</h3>
+          <button class="btn btn-d btn-sm" onclick="timerClearLogs()"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div id="timer-logs"><p class="text-slate-400 text-sm text-center py-4">Nenhuma batida registrada.</p></div>
+        <div id="timer-summary" class="hidden mt-3 pt-3 border-t border-slate-100">
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div><p class="text-xs text-slate-400">Batidas</p><p id="ts-bat" class="text-xl font-bold text-slate-700">0</p></div>
+            <div><p class="text-xs text-slate-400">Eficiência Méd.</p><p id="ts-eff" class="text-xl font-bold text-emerald-600">--%</p></div>
+            <div><p class="text-xs text-slate-400">Kg Estimados</p><p id="ts-kg" class="text-xl font-bold text-brand-600">0</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJEÇÃO DO TÚNEL HELICOIDAL -->
+    <section id="screen-tunel" class="screen p-4 max-w-4xl mx-auto">
+      <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-wave-square text-violet-500 mr-2"></i>Projeção — Túnel Helicoidal</h2>
+      <div class="card p-4 mb-4">
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label class="fl">Linha de Produção</label>
+            <select id="tunel-linha" class="fi" onchange="renderTunel()"><option value="">Selecione...</option></select>
+          </div>
+          <div>
+            <label class="fl">Hora de Início</label>
+            <input type="time" id="tunel-hora" class="fi" value="06:00" oninput="renderTunel()">
+          </div>
+          <div>
+            <label class="fl">Batidas a projetar</label>
+            <input type="number" id="tunel-bat" class="fi" value="10" min="1" max="30" oninput="renderTunel()">
+          </div>
+        </div>
+      </div>
+      <div id="tunel-result">
+        <p class="text-slate-400 text-sm text-center py-8">Selecione uma linha para ver a projeção.</p>
+      </div>
+    </section>
+
     <!-- CONFIG -->
     <section id="screen-config" class="screen p-4 max-w-2xl mx-auto">
       <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-sliders text-slate-500 mr-2"></i>Configurações</h2>
@@ -421,7 +533,7 @@ body{font-family:'Inter',sans-serif;}
   </main>
 
   <!-- BOTTOM NAV -->
-  <nav class="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 flex justify-around items-center h-16 px-1 shadow-lg">
+  <nav class="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 flex items-center h-16 px-1 shadow-lg">
     <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1 active" data-s="home">
       <i class="fa-solid fa-house nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Início</span>
     </button>
@@ -439,6 +551,15 @@ body{font-family:'Inter',sans-serif;}
     </button>
     <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="ordens">
       <i class="fa-solid fa-clipboard-list nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">OPs</span>
+    </button>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="capacidade">
+      <i class="fa-solid fa-gauge nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Turno</span>
+    </button>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="timer">
+      <i class="fa-solid fa-stopwatch nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Timer</span>
+    </button>
+    <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="tunel">
+      <i class="fa-solid fa-wave-square nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Túnel</span>
     </button>
     <button class="nav-item flex flex-col items-center gap-0.5 px-2 py-1" data-s="linhas">
       <i class="fa-solid fa-gears nav-icon text-lg text-slate-400"></i><span class="nav-label text-xs text-slate-400">Linhas</span>
@@ -527,9 +648,23 @@ body{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- MODAL: MP DETALHE -->
+<div id="modal-mp" class="modal-backdrop" onclick="if(event.target===this)closeModal('modal-mp')">
+  <div class="modal-box">
+    <div class="flex justify-between items-center mb-4">
+      <h3 id="mp-detail-title" class="font-bold text-lg">Detalhes do Produto</h3>
+      <button onclick="closeModal('modal-mp')" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="mp-detail-body"></div>
+    <div class="mt-4">
+      <button class="btn btn-s w-full" onclick="closeModal('modal-mp')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithPopup, signInWithCredential, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, signInWithPopup, signInWithCredential, signInAnonymously, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
@@ -698,7 +833,7 @@ function startListeners(uid){
     localInventory=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderMP(); renderDashboard(); renderCfgConsumo();
     setSyncStatus('ok');
-  },err=>{ el('mp-tbody').innerHTML=`<tr><td colspan="8" class="text-center py-6 text-red-500">Erro MP: ${err.message}</td></tr>`; setSyncStatus('error'); });
+  },err=>{ el('mp-cards').innerHTML=`<p class="text-red-500 text-sm text-center py-6">Erro MP: ${err.message}</p>`; setSyncStatus('error'); });
 
   unsubBat=onSnapshot(collection(dbMP,'users',uid,'batches'),snap=>{
     localBatches=snap.docs.map(d=>({id:d.id,...d.data()})).filter(b=>b.isReleased!==false);
@@ -726,7 +861,12 @@ el('btn-login').addEventListener('click',async()=>{
   try{
     const result=await signInWithPopup(authMP,provider);
     try{ await signInWithCredential(authPA,GoogleAuthProvider.credentialFromResult(result)); }
-    catch(e){ console.warn('expedicao secondary auth:',e.message); }
+    catch(e){
+      console.warn('expedicao secondary auth:',e.message);
+      // Fallback: try anonymous auth so PA listener can still attempt reads
+      try{ await signInAnonymously(authPA); }
+      catch(e2){ console.warn('anon PA auth:',e2.message); startPAListener(); }
+    }
   }catch(e){
     el('login-error').textContent='Erro: '+e.message; show(el('login-error'));
     el('btn-login').disabled=false; el('btn-login').innerHTML='<i class="fa-brands fa-google"></i> Entrar com Google';
@@ -773,6 +913,9 @@ function showScreen(name){
   if(name==='home') renderDashboard();
   if(name==='receitas') renderReceitas();
   if(name==='config') renderCfgConsumo();
+  if(name==='capacidade') initCapacidade();
+  if(name==='timer') initTimer();
+  if(name==='tunel') initTunel();
 }
 window.showScreen=showScreen;
 document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.s)));
@@ -850,42 +993,82 @@ function renderDashboard(){
 
 // ── MATÉRIAS-PRIMAS ───────────────────────────────────────────────────────────
 function renderMP(){
-  const tbody=el('mp-tbody');
-  if(!localInventory.length){ tbody.innerHTML='<tr><td colspan="8" class="text-center py-8 text-slate-400">Nenhum item no estoque MP.</td></tr>'; return; }
+  const cont=el('mp-cards');
+  if(!cont) return;
+  if(!localInventory.length){ cont.innerHTML='<p class="text-slate-400 text-sm text-center py-8"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Carregando matérias-primas...</p>'; return; }
 
-  const batchMap={};
-  localBatches.forEach(b=>{ if(!batchMap[b.productId])batchMap[b.productId]=[]; batchMap[b.productId].push(b); });
+  const RISK_ORDER={perda:0,vencido:1,ruptura:2,vencendo:3,ok:4,sem_data:5};
 
-  const rows=[];
-  localInventory.forEach(inv=>{
-    const batches=(batchMap[inv.id]||[]).sort((a,b)=>new Date(a.expiryDate||'9999')-new Date(b.expiryDate||'9999'));
-    if(batches.length===0){
-      // Show item without batches
-      const rowFilter='ok';
-      if(mpFilter!=='all'&&mpFilter!==rowFilter) return;
-      rows.push(`<tr><td><p class="font-semibold">${inv.name}</p><p class="text-slate-400 text-xs">${inv.supplier||''}</p></td><td>${inv.totalQuantity||0}</td><td>${inv.minStock||'–'}</td><td colspan="4" class="text-slate-400 text-xs">Sem lotes registrados</td><td></td></tr>`);
-    } else {
-      batches.forEach((b,idx)=>{
-        const risk=calcBatchRisk(b,inv.id);
-        const rowFilter=risk.tipo==='perda'||risk.tipo==='vencido'?'perda':risk.tipo==='ruptura'?'ruptura':risk.tipo==='vencendo'?'vencendo':'ok';
-        if(mpFilter!=='all'&&mpFilter!==rowFilter) return;
-        const days=daysUntil(b.expiryDate);
-        const cobStr=risk.cobertura!==null?`${risk.cobertura}d`:'–';
-        const cnsStr=risk.consumo>0?`${risk.consumo.toFixed(1)} kg/d`:'–';
-        rows.push(`<tr>
-          ${idx===0?`<td rowspan="${batches.length}"><p class="font-semibold">${inv.name}</p><p class="text-slate-400 text-xs">${inv.supplier||''}</p></td><td rowspan="${batches.length}"><p class="font-semibold">${inv.totalQuantity||0}</p>${inv.minStock>0?`<div class="pb mt-1 w-16"><div class="pf ${(inv.totalQuantity||0)<=inv.minStock?'bg-red-400':'bg-emerald-500'}" style="width:${Math.min(100,((inv.totalQuantity||0)/inv.minStock)*50)}%"></div></div>`:''}</td><td rowspan="${batches.length}">${inv.minStock||'–'}</td>`:''}
-          <td><span class="font-mono text-xs">${b.code}</span><br><span class="text-slate-400 text-xs">${b.quantity}kg</span></td>
-          <td>${fmtDate(b.expiryDate)}</td>
-          <td>${days!==null?days:'–'}</td>
-          <td>${cnsStr}</td>
-          <td>${cobStr}</td>
-          <td>${riscoBadge(risk.tipo,risk.sobra,risk.cobertura)}</td>
-        </tr>`);
-      });
-    }
+  const products=localInventory.map(inv=>{
+    const batches=localBatches.filter(b=>b.productId===inv.id);
+    const worstRisk=batches.reduce((worst,b)=>{
+      const r=calcBatchRisk(b,inv.id);
+      return (RISK_ORDER[r.tipo]??9)<(RISK_ORDER[worst.tipo]??9)?r:worst;
+    },{tipo:'ok',consumo:0,cobertura:null,sobra:null});
+    return {...inv,risk:worstRisk,batchCount:batches.length};
   });
-  tbody.innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" class="text-center py-8 text-slate-400">Nenhum item neste filtro.</td></tr>';
+
+  const filterMap={perda:['perda','vencido'],ruptura:['ruptura'],vencendo:['vencendo'],ok:['ok','sem_data']};
+  const filtered=mpFilter==='all'?products:products.filter(p=>(filterMap[mpFilter]||[]).includes(p.risk.tipo));
+
+  if(!filtered.length){ cont.innerHTML='<p class="text-slate-400 text-sm text-center py-8">Nenhum produto encontrado com este filtro.</p>'; return; }
+
+  cont.innerHTML=filtered.map(p=>{
+    const rb=riscoBadge(p.risk.tipo,p.risk.sobra,p.risk.cobertura);
+    const stockOk=(p.totalQuantity||0)>=(p.minimumQuantity||p.minStock||0);
+    const minQty=p.minimumQuantity||p.minStock;
+    return `<div class="card p-4 mp-prod-card flex items-center justify-between" onclick="openMPDetail('${p.id}')">
+      <div class="flex-1 min-w-0">
+        <h3 class="font-bold text-slate-800 truncate">${p.name}</h3>
+        <div class="flex items-center gap-3 mt-1 flex-wrap">
+          <span class="text-sm text-slate-600"><i class="fa-solid fa-cubes text-slate-300 mr-1"></i>${p.totalQuantity||0} ${p.unit||'kg'}</span>
+          ${minQty?`<span class="text-xs ${stockOk?'text-slate-400':'text-red-500 font-semibold'}">mín: ${minQty}</span>`:''}
+          <span class="text-xs text-slate-400">${p.batchCount} lote(s)</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 ml-3 shrink-0">
+        ${rb}
+        <i class="fa-solid fa-chevron-right text-slate-300 text-sm"></i>
+      </div>
+    </div>`;
+  }).join('');
 }
+
+window.openMPDetail=function(productId){
+  const product=localInventory.find(i=>i.id===productId);
+  if(!product) return;
+  const batches=localBatches.filter(b=>b.productId===productId)
+    .sort((a,b)=>new Date(a.expiryDate||'9999')-new Date(b.expiryDate||'9999'));
+
+  el('mp-detail-title').textContent=product.name;
+
+  const loteRows=batches.map(b=>{
+    const risk=calcBatchRisk(b,productId);
+    const days=daysUntil(b.expiryDate);
+    return `<tr>
+      <td><span class="font-mono text-xs">${b.code||b.id.slice(0,8)}</span></td>
+      <td>${b.quantity} ${b.unit||'kg'}</td>
+      <td>${fmtDate(b.expiryDate)}</td>
+      <td>${days!==null?days+'d':'–'}</td>
+      <td>${risk.consumo>0?risk.consumo.toFixed(1)+' kg/d':'–'}</td>
+      <td>${risk.cobertura!==null?risk.cobertura+'d':'–'}</td>
+      <td>${riscoBadge(risk.tipo,risk.sobra,risk.cobertura)}</td>
+    </tr>`;
+  }).join('');
+
+  const minQty=product.minimumQuantity||product.minStock;
+  el('mp-detail-body').innerHTML=`
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Estoque Total</p><p class="font-bold">${product.totalQuantity||0} ${product.unit||'kg'}</p></div>
+      <div class="bg-slate-50 rounded-xl p-3"><p class="text-xs text-slate-400">Mínimo</p><p class="font-bold">${minQty||'–'} ${minQty?product.unit||'kg':''}</p></div>
+    </div>
+    ${batches.length?`<div class="tw"><table class="bt">
+      <thead><tr><th>Lote</th><th>Qty</th><th>Validade</th><th>Dias</th><th>Cons/dia</th><th>Cobertura</th><th>Risco</th></tr></thead>
+      <tbody>${loteRows}</tbody>
+    </table></div>`:'<p class="text-slate-400 text-sm text-center py-4">Nenhum lote registrado para este produto.</p>'}
+  `;
+  openModal('modal-mp');
+};
 
 document.querySelectorAll('.mp-f').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.mp-f').forEach(x=>{x.className=x.className.replace('btn-p','btn-s');});
@@ -1270,6 +1453,247 @@ window.clearAllData=function(){
     linhas=DEFAULT_LINHAS; funcionarios=[]; ordens=[]; config={diasAlertaMP:7,diasAlertaPA:3,masterUid:'',consumoDiario:{}};
     renderDashboard(); renderLinhas(); showNotif('Dados limpos.');
   });
+};
+
+// ── CAPACIDADE DO TURNO ───────────────────────────────────────────────────────
+function initCapacidade(){
+  const sel=el('cap-linha');
+  if(!sel) return;
+  sel.innerHTML='<option value="">Selecione...</option>'+linhas.map(l=>`<option value="${l.id}">${l.nome}</option>`).join('');
+}
+window.calcCapacidade=function(){
+  const linhaId=el('cap-linha').value;
+  const horas=parseFloat(el('cap-horas').value)||8;
+  const funcsDisp=parseInt(el('cap-funcs').value)||0;
+  if(!linhaId){ hide(el('cap-result')); return; }
+  const linha=linhas.find(l=>l.id===linhaId);
+  if(!linha){ hide(el('cap-result')); return; }
+  show(el('cap-result'));
+
+  const totalSec=horas*3600;
+  const batSec=(linha.tempoBatelada||1)*60;
+  const setupSec=(linha.tempoSetup||0)*60;
+  const batidas=batSec>0?Math.max(0,Math.floor((totalSec-setupSec)/batSec)):0;
+  const kgEst=batidas*(linha.capacidadeBatelada||0);
+  const tempoProdSec=setupSec+batidas*batSec;
+  const ociososMin=Math.round((totalSec-tempoProdSec)/60);
+  const tempoH=(tempoProdSec/3600).toFixed(1);
+
+  el('cap-r-bat').textContent=batidas;
+  el('cap-r-kg').textContent=kgEst.toLocaleString('pt-BR');
+  el('cap-r-tempo').textContent=tempoH;
+  el('cap-r-ocioso').textContent=ociososMin;
+
+  if(funcsDisp<linha.funcionariosMinimos){
+    show(el('cap-func-alert'));
+    el('cap-func-alert-msg').innerHTML=`<p class="text-sm font-semibold text-amber-800">${funcsDisp} disponível(is), mínimo p/ ${linha.nome}: ${linha.funcionariosMinimos}.</p>`;
+  } else hide(el('cap-func-alert'));
+
+  const maxT=setupSec+batidas*batSec;
+  const bars=[];
+  for(let i=0;i<Math.min(batidas,24);i++){
+    const ini=setupSec+i*batSec, fim=ini+batSec;
+    const left=(ini/maxT*100).toFixed(1);
+    const width=Math.max(1,(batSec/maxT*100)).toFixed(1);
+    bars.push(`<div class="absolute flex items-center justify-center text-white text-xs font-bold rounded overflow-hidden" style="left:${left}%;width:${width}%;height:26px;background:#0ea5e9;" title="Batida #${i+1}">${batidas<=12?`#${i+1}`:''}</div>`);
+  }
+  const tickN=Math.min(Math.ceil(horas)+1,9);
+  const ticks=Array.from({length:tickN},(_,i)=>{
+    const sec=i*(totalSec/(tickN-1));
+    const min=Math.floor(sec/60);
+    return `<span class="text-xs text-slate-400 absolute" style="left:${(sec/totalSec*100).toFixed(1)}%;transform:translateX(-50%)">${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}</span>`;
+  }).join('');
+  el('cap-timeline-content').innerHTML=`
+    <div class="relative h-8 mb-2">${bars.join('')}</div>
+    <div class="relative h-5">${ticks}</div>
+    <p class="text-xs text-slate-400 mt-3">Setup: ${linha.tempoSetup}min · Batida: ${linha.tempoBatelada}min · ${linha.capacidadeBatelada}kg/bat</p>
+  `;
+};
+
+// ── CRONÔMETRO DE BATIDAS ─────────────────────────────────────────────────────
+let _timerInterval=null, _timerStarted=null, _timerElapsed=0, _timerRunning=false;
+let timerLogs=JSON.parse(localStorage.getItem('pcp_batch_logs')||'[]');
+
+function fmtSec(s){
+  const m=Math.floor(s/60);
+  const sec=Math.floor(s%60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function initTimer(){
+  const sel=el('timer-linha');
+  if(!sel) return;
+  sel.innerHTML='<option value="">Selecione...</option>'+linhas.map(l=>`<option value="${l.id}">${l.nome}</option>`).join('');
+  renderTimerLogs();
+}
+
+window.timerLinhaChange=function(){
+  const linha=linhas.find(l=>l.id===el('timer-linha').value);
+  el('timer-vs').textContent=linha?`padrão: ${fmtSec(linha.tempoBatelada*60)}`:'padrão: --';
+  timerReset();
+};
+
+function _timerUpdateDisplay(){
+  el('timer-display').textContent=fmtSec(_timerElapsed);
+  const linha=linhas.find(l=>l.id===el('timer-linha')?.value);
+  const ring=el('timer-ring');
+  if(!ring) return;
+  if(linha){
+    const std=linha.tempoBatelada*60;
+    const progress=Math.min(_timerElapsed/std,1);
+    ring.style.strokeDashoffset=(502.65*(1-progress)).toFixed(2);
+    ring.style.stroke=_timerElapsed>std*1.1?'#f59e0b':_timerElapsed>std?'#22c55e':'#0ea5e9';
+  } else {
+    ring.style.strokeDashoffset=502.65;
+    ring.style.stroke='#0ea5e9';
+  }
+}
+
+window.timerStart=function(){
+  if(_timerRunning) return;
+  if(!el('timer-linha').value){ showNotif('Selecione uma linha primeiro.',true); return; }
+  _timerRunning=true;
+  _timerStarted=Date.now()-_timerElapsed*1000;
+  _timerInterval=setInterval(()=>{ _timerElapsed=(Date.now()-_timerStarted)/1000; _timerUpdateDisplay(); },100);
+  el('btn-timer-start').classList.add('hidden');
+  el('btn-timer-stop').classList.remove('hidden');
+  el('timer-status').textContent='Batida em andamento...';
+};
+
+window.timerStop=function(){
+  if(!_timerRunning) return;
+  clearInterval(_timerInterval); _timerRunning=false;
+  const linhaId=el('timer-linha').value;
+  const linha=linhas.find(l=>l.id===linhaId);
+  const std=linha?(linha.tempoBatelada*60):265;
+  const eff=Math.round(std/_timerElapsed*100);
+  const batNum=parseInt(el('timer-bat-num').value)||1;
+  const log={id:uid(),linhaId,batNum,duracao:Math.round(_timerElapsed),padrao:std,eficiencia:eff,kg:linha?.capacidadeBatelada||156,timestamp:new Date().toISOString()};
+  timerLogs.unshift(log);
+  localStorage.setItem('pcp_batch_logs',JSON.stringify(timerLogs.slice(0,200)));
+  el('btn-timer-stop').classList.add('hidden');
+  el('btn-timer-start').classList.remove('hidden');
+  const diff=Math.round(_timerElapsed)-std;
+  el('timer-status').textContent=`Concluída! ${fmtSec(_timerElapsed)} — ${eff}% eficiência (${diff>0?'+':''}${fmtSec(Math.abs(diff))} vs padrão)`;
+  el('timer-bat-num').value=batNum+1;
+  renderTimerLogs();
+  _timerElapsed=0; _timerUpdateDisplay();
+};
+
+window.timerReset=function(){
+  clearInterval(_timerInterval); _timerRunning=false; _timerElapsed=0; _timerUpdateDisplay();
+  el('btn-timer-start').classList.remove('hidden');
+  el('btn-timer-stop').classList.add('hidden');
+  el('timer-status').textContent='';
+};
+
+window.timerClearLogs=function(){
+  confirmAction('Limpar Histórico','Apagar todos os registros do cronômetro?',()=>{
+    timerLogs=[]; localStorage.removeItem('pcp_batch_logs'); renderTimerLogs(); showNotif('Histórico limpo.');
+  });
+};
+
+function renderTimerLogs(){
+  const div=el('timer-logs');
+  if(!div) return;
+  if(!timerLogs.length){ div.innerHTML='<p class="text-slate-400 text-sm text-center py-4">Nenhuma batida registrada.</p>'; hide(el('timer-summary')); return; }
+  div.innerHTML=timerLogs.slice(0,20).map(l=>{
+    const diff=l.duracao-l.padrao;
+    const diffStr=diff>0?`+${fmtSec(Math.abs(diff))}`:`-${fmtSec(Math.abs(diff))}`;
+    const effCl=l.eficiencia>=100?'text-emerald-600':l.eficiencia>=85?'text-amber-600':'text-red-500';
+    const linhaNome=linhas.find(x=>x.id===l.linhaId)?.nome||l.linhaId||'–';
+    return `<div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+      <div>
+        <span class="font-mono text-xs text-slate-400 mr-2">#${l.batNum}</span>
+        <span class="font-semibold text-slate-700">${fmtSec(l.duracao)}</span>
+        <span class="text-slate-400 text-xs ml-1">(${diffStr} vs padrão)</span>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <span class="text-slate-400 text-xs">${l.kg}kg</span>
+        <span class="font-bold ${effCl}">${l.eficiencia}%</span>
+      </div>
+    </div>`;
+  }).join('');
+  const total=timerLogs.length;
+  const avgEff=Math.round(timerLogs.reduce((s,l)=>s+l.eficiencia,0)/total);
+  const totalKg=timerLogs.reduce((s,l)=>s+l.kg,0);
+  show(el('timer-summary'));
+  el('ts-bat').textContent=total;
+  el('ts-eff').textContent=avgEff+'%';
+  el('ts-kg').textContent=totalKg.toLocaleString('pt-BR');
+}
+
+// ── PROJEÇÃO DO TÚNEL HELICOIDAL ─────────────────────────────────────────────
+function initTunel(){
+  const sel=el('tunel-linha');
+  if(!sel) return;
+  sel.innerHTML='<option value="">Selecione...</option>'+linhas.map(l=>`<option value="${l.id}">${l.nome}</option>`).join('');
+}
+
+window.renderTunel=function(){
+  const linhaId=el('tunel-linha').value;
+  const horaStr=el('tunel-hora').value||'06:00';
+  const numBat=Math.min(30,parseInt(el('tunel-bat').value)||10);
+  const div=el('tunel-result');
+  if(!linhaId){ div.innerHTML='<p class="text-slate-400 text-sm text-center py-8">Selecione uma linha para ver a projeção.</p>'; return; }
+  const linha=linhas.find(l=>l.id===linhaId);
+  if(!linha) return;
+  const [hh,mm]=horaStr.split(':').map(Number);
+  const startMin=hh*60+mm;
+  const batMin=linha.tempoBatelada;
+  const capKg=linha.capacidadeBatelada;
+
+  const batches=Array.from({length:numBat},(_,i)=>{
+    const em=startMin+i*batMin;
+    return {n:i+1,entradaMin:em,h:Math.floor(em/60)%24,m:em%60,kg:capKg};
+  });
+
+  const byHour={};
+  batches.forEach(b=>{
+    const key=`${String(b.h).padStart(2,'0')}:00`;
+    if(!byHour[key]) byHour[key]={kg:0,bat:0};
+    byHour[key].kg+=b.kg; byHour[key].bat++;
+  });
+  const maxKg=Math.max(...Object.values(byHour).map(v=>v.kg),1);
+  const barChart=Object.entries(byHour).map(([h,v])=>`
+    <div class="flex flex-col items-center gap-1 flex-shrink-0">
+      <span class="text-xs font-bold text-slate-700">${v.kg}kg</span>
+      <div style="width:44px;height:${Math.round(v.kg/maxKg*80)}px;background:#8b5cf6;border-radius:4px 4px 0 0;" class="tunel-bar"></div>
+      <span class="text-xs text-slate-500 text-center leading-tight">${h}</span>
+      <span class="text-xs text-slate-400">${v.bat}bat</span>
+    </div>`).join('');
+
+  const timeline=batches.slice(0,20).map(b=>`
+    <div class="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
+      <div class="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700 shrink-0">${b.n}</div>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-slate-700">${String(b.h).padStart(2,'0')}:${String(b.m).padStart(2,'0')} — Batida #${b.n}</p>
+        <p class="text-xs text-slate-400">${capKg}kg entram no túnel helicoidal</p>
+      </div>
+      <span class="badge badge-purple">${String(b.h).padStart(2,'0')}h${String(b.m).padStart(2,'0')}</span>
+    </div>`).join('');
+
+  const totalKg=batches.reduce((s,b)=>s+b.kg,0);
+  const last=batches[batches.length-1];
+  const endMin=last.entradaMin+batMin;
+  const durH=Math.floor((endMin-startMin)/60);
+  const durM=(endMin-startMin)%60;
+
+  div.innerHTML=`
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="kpi text-center"><p class="text-slate-400 text-xs uppercase font-semibold mb-1">Total Kg</p><p class="text-2xl font-bold text-violet-600">${totalKg.toLocaleString('pt-BR')}</p></div>
+      <div class="kpi text-center"><p class="text-slate-400 text-xs uppercase font-semibold mb-1">Batidas</p><p class="text-2xl font-bold text-brand-600">${numBat}</p></div>
+      <div class="kpi text-center"><p class="text-slate-400 text-xs uppercase font-semibold mb-1">Duração</p><p class="text-2xl font-bold text-emerald-600">${durH}h${String(durM).padStart(2,'0')}</p></div>
+    </div>
+    <div class="card p-4 mb-4">
+      <h3 class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-chart-bar text-violet-500 mr-2"></i>Entrada no Túnel por Hora</h3>
+      <div class="flex gap-3 items-end min-h-28 overflow-x-auto pb-2">${barChart}</div>
+    </div>
+    <div class="card p-4">
+      <h3 class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-timeline text-violet-500 mr-2"></i>Linha do Tempo</h3>
+      ${timeline}
+      ${batches.length>20?`<p class="text-xs text-slate-400 text-center mt-2">+${batches.length-20} batidas não exibidas</p>`:''}
+    </div>`;
 };
 
 // ── MODAL UTILS ───────────────────────────────────────────────────────────────
